@@ -14,7 +14,7 @@ struct SettingsStoreTests {
         #expect(store.maxHistoryItems == Constants.History.defaultMax)
         #expect(store.showsRichText == true)
         #expect(store.pastesRichText == true)
-        #expect(store.useHorizontalLayout == true)
+        #expect(store.showAsCards == true)
         #expect(store.panelSizeByPosition.isEmpty)
     }
 
@@ -24,14 +24,14 @@ struct SettingsStoreTests {
         first.maxHistoryItems = 200
         first.showsRichText = false
         first.pastesRichText = false
-        first.useHorizontalLayout = false
+        first.showAsCards = false
         first.setPanelSize(CGSize(width: 123, height: 456), for: 3)
 
         let second = SettingsStore(defaults: defaults)
         #expect(second.maxHistoryItems == 200)
         #expect(second.showsRichText == false)
         #expect(second.pastesRichText == false)
-        #expect(second.useHorizontalLayout == false)
+        #expect(second.showAsCards == false)
         #expect(second.panelSize(for: 3) == CGSize(width: 123, height: 456))
     }
 

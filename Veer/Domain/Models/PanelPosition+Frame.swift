@@ -62,8 +62,6 @@ extension PanelPosition {
         case .centerLarge:
             let size = overrideSize ?? NSSize(width: screen.width * 0.85, height: screen.height * 0.85)
             return centered(size, in: screen)
-        case .fullScreen:
-            return screen
         }
     }
 

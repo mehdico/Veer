@@ -11,7 +11,6 @@ enum PanelPosition: Int, Codable, CaseIterable, Sendable {
     case centerSmall = 4
     case centerMedium = 5
     case centerLarge = 6
-    case fullScreen = 7
 
     var title: String {
         switch self {
@@ -25,7 +24,6 @@ enum PanelPosition: Int, Codable, CaseIterable, Sendable {
         case .centerSmall: "Center"
         case .centerMedium: "Center"
         case .centerLarge: "Center"
-        case .fullScreen: "Full Screen"
         }
     }
 
@@ -41,13 +39,11 @@ enum PanelPosition: Int, Codable, CaseIterable, Sendable {
         case .centerSmall: AccessibilityIdentifiers.positionCenterSmall
         case .centerMedium: AccessibilityIdentifiers.positionCenterMedium
         case .centerLarge: AccessibilityIdentifiers.positionCenterLarge
-        case .fullScreen: AccessibilityIdentifiers.positionFullScreen
         }
     }
 
     static let menuOrder: [PanelPosition] = [
         .right, .left, .top, .bottom, .centerMedium,
-        .fullScreen,
     ]
 }
 
@@ -58,7 +54,7 @@ extension PanelPosition {
             return .bottom
         case .centerExtraSmall, .centerSmall, .centerMedium, .centerLarge:
             return .centerMedium
-        case .left, .right, .top, .fullScreen:
+        case .left, .right, .top:
             return self
         }
     }

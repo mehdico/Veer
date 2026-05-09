@@ -28,7 +28,6 @@ enum AccessibilityIdentifiers {
     static let positionCenterSmall = "positionCenterSmall"
     static let positionCenterMedium = "positionCenterMedium"
     static let positionCenterLarge = "positionCenterLarge"
-    static let positionFullScreen = "positionFullScreen"
 
     static let waitingForControlLabel = "waitingForControlLabel"
     static let howToUseLabel = "howToUseLabel"

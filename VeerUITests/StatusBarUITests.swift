@@ -65,7 +65,6 @@ final class StatusBarUITests: XCTestCase {
             "positionCenterSmall",
             "positionCenterMedium",
             "positionCenterLarge",
-            "positionFullScreen",
         ]
         for id in positionIdentifiers {
             XCTAssertTrue(app.menuItems[id].waitForExistence(timeout: 2), "Missing position item: \(id)")

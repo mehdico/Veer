@@ -9,7 +9,7 @@ final class SettingsStore {
     var maxHistoryItems: Int { didSet { persist() } }
     var showsRichText: Bool { didSet { persist() } }
     var pastesRichText: Bool { didSet { persist() } }
-    var useHorizontalLayout: Bool { didSet { persist() } }
+    var showAsCards: Bool { didSet { persist() } }
     private(set) var panelSizeByPosition: [Int: PanelSize] { didSet { persist() } }
 
     @ObservationIgnored let defaults: UserDefaults
@@ -20,7 +20,7 @@ final class SettingsStore {
         self.maxHistoryItems = loaded.maxHistoryItems
         self.showsRichText = loaded.showsRichText
         self.pastesRichText = loaded.pastesRichText
-        self.useHorizontalLayout = loaded.useHorizontalLayout
+        self.showAsCards = loaded.showAsCards
         self.panelSizeByPosition = loaded.panelSizeByPosition
     }
 
@@ -29,7 +29,7 @@ final class SettingsStore {
             maxHistoryItems: maxHistoryItems,
             showsRichText: showsRichText,
             pastesRichText: pastesRichText,
-            useHorizontalLayout: useHorizontalLayout,
+            showAsCards: showAsCards,
             panelSizeByPosition: panelSizeByPosition
         )
     }

@@ -123,7 +123,7 @@ final class AppEnvironment {
         }
         let ingestor = ClipIngestor(monitor: monitor, repository: repository)
         let panel = PanelCoordinator()
-        panel.horizontal = settings.useHorizontalLayout
+        panel.horizontal = settings.showAsCards
         let preview = PreviewCoordinator()
         let viewModel = HistoryListViewModel(
             repository: repository,

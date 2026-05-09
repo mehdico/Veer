@@ -26,7 +26,7 @@ struct GeneralTab: View {
             Section("Appearance") {
                 Toggle("Show formatted text in clips", isOn: $settings.showsRichText)
                     .accessibilityIdentifier("settingsShowsRichTextToggle")
-                Toggle("Use horizontal card layout", isOn: $settings.useHorizontalLayout)
+                Toggle("Show clips as cards", isOn: $settings.showAsCards)
                     .accessibilityIdentifier("settingsHorizontalToggle")
             }
 
@@ -45,7 +45,7 @@ struct GeneralTab: View {
         .onChange(of: settings.maxHistoryItems) { _, new in
             try? env.repository.setMaxItems(new)
         }
-        .onChange(of: settings.useHorizontalLayout) { _, new in
+        .onChange(of: settings.showAsCards) { _, new in
             env.panel.horizontal = new
         }
         .onChange(of: launchAtLogin) { _, new in

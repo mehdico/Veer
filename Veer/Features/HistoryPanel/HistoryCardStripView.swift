@@ -59,37 +59,24 @@ struct HistoryCardStripView: View {
 
     private var cardScroll: some View {
         GeometryReader { geo in
-            let verticalPadding: CGFloat = 16
-            let side = max(80, geo.size.height - verticalPadding)
-            let visibleCount = max(1, Int(geo.size.width / max(side + 8, 1)))
+            let isVertical = geo.size.height > geo.size.width
+            let padding: CGFloat = 16
+            let side = isVertical
+                ? max(80, geo.size.width - padding)
+                : max(80, geo.size.height - padding)
+            let visibleCount = isVertical
+                ? max(1, Int(geo.size.height / max(side + 8, 1)))
+                : max(1, Int(geo.size.width / max(side + 8, 1)))
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(alignment: .center, spacing: 8) {
-                    let items = viewModel.filteredItems
-                    if items.isEmpty {
-                        Text(viewModel.searchText.isEmpty ? "No clips yet" : "No matches")
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 24)
-                            .frame(width: side, height: side)
-                    } else {
-                        ForEach(Array(items.enumerated()), id: \.element.id) { index, snapshot in
-                            cardCell(index: index, snapshot: snapshot, side: side)
-                                .transition(
-                                    .asymmetric(
-                                        insertion: .opacity.combined(with: .scale(scale: 0.98)).combined(with: .offset(y: 4)),
-                                        removal: .opacity.combined(with: .scale(scale: 0.98))
-                                    )
-                                )
-                        }
-                    }
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, verticalPadding / 2)
-                .scrollTargetLayout()
-                .animation(viewModel.searchText.isEmpty ? nil : .spring(response: 0.35, dampingFraction: 0.8), value: viewModel.filteredIDs)
+            ScrollView(isVertical ? .vertical : .horizontal, showsIndicators: false) {
+                cardStack(isVertical: isVertical, side: side)
+                    .padding(isVertical ? .vertical : .horizontal, 8)
+                    .padding(isVertical ? .horizontal : .vertical, padding / 2)
+                    .scrollTargetLayout()
+                    .animation(viewModel.searchText.isEmpty ? nil : .spring(response: 0.35, dampingFraction: 0.8), value: viewModel.filteredIDs)
             }
             .scrollTargetBehavior(.viewAligned)
-            .scrollPosition(id: $firstVisibleID, anchor: .leading)
+            .scrollPosition(id: $firstVisibleID, anchor: isVertical ? .top : .leading)
             .accessibilityIdentifier(AccessibilityIdentifiers.yippyTableView)
             .onAppear {
                 if firstVisibleID == nil {
@@ -132,6 +119,36 @@ struct HistoryCardStripView: View {
                         firstVisibleID = viewModel.filteredItems.first?.id
                     }
                 }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func cardStack(isVertical: Bool, side: CGFloat) -> some View {
+        if isVertical {
+            LazyVStack(alignment: .center, spacing: 8) { cardItems(side: side) }
+        } else {
+            LazyHStack(alignment: .center, spacing: 8) { cardItems(side: side) }
+        }
+    }
+
+    @ViewBuilder
+    private func cardItems(side: CGFloat) -> some View {
+        let items = viewModel.filteredItems
+        if items.isEmpty {
+            Text(viewModel.searchText.isEmpty ? "No clips yet" : "No matches")
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 24)
+                .frame(width: side, height: side)
+        } else {
+            ForEach(Array(items.enumerated()), id: \.element.id) { index, snapshot in
+                cardCell(index: index, snapshot: snapshot, side: side)
+                    .transition(
+                        .asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 0.98)).combined(with: .offset(y: 4)),
+                            removal: .opacity.combined(with: .scale(scale: 0.98))
+                        )
+                    )
             }
         }
     }

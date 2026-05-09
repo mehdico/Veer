@@ -52,14 +52,7 @@ final class PanelCoordinator {
         previousApp?.activate(options: [])
     }
 
-    var effectiveHorizontal: Bool {
-        switch position {
-        case .top, .bottom, .bottomSmall, .bottomLarge: return true
-        case .left, .right: return false
-        case .centerExtraSmall, .centerSmall, .centerMedium, .centerLarge, .fullScreen:
-            return horizontal
-        }
-    }
+    var effectiveHorizontal: Bool { horizontal }
 
     func currentScreen() -> NSScreen? {
         let mouse = NSEvent.mouseLocation

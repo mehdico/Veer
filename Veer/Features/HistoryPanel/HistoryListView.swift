@@ -93,7 +93,9 @@ struct HistoryListView: View {
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.yippyTableView)
             .onChange(of: viewModel.selectedIndex) { _, newIndex in
-                // Scroll removed to eliminate delay
+                let items = viewModel.filteredItems
+                guard items.indices.contains(newIndex) else { return }
+                proxy.scrollTo(items[newIndex].id, anchor: .center)
             }
             .onChange(of: viewModel.searchText) { _, newValue in
                 if let firstID = viewModel.filteredItems.first?.id {

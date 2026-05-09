@@ -24,7 +24,6 @@ final class PositionHotkeyUITests: XCTestCase {
             "positionRightButton",
             "positionTopButton",
             "positionBottomButton",
-            "positionFullScreen",
             "positionCenterMedium",
         ]
 

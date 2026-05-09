@@ -62,11 +62,6 @@ struct PanelPositionTests {
         }
     }
 
-    @Test func fullScreenMatchesScreenFrame() {
-        let frame = PanelPosition.computeFrame(screenFrame: screen, visibleFrame: visible, horizontal: true, position: .fullScreen)
-        #expect(frame == screen)
-    }
-
     @Test func everyCaseProducesNonEmptyFrame() {
         for position in PanelPosition.allCases {
             let frame = PanelPosition.computeFrame(screenFrame: screen, visibleFrame: visible, horizontal: true, position: position)
