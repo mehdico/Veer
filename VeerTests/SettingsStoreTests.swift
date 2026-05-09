@@ -15,6 +15,7 @@ struct SettingsStoreTests {
         #expect(store.showsRichText == true)
         #expect(store.pastesRichText == true)
         #expect(store.useHorizontalLayout == true)
+        #expect(store.panelSizeByPosition.isEmpty)
     }
 
     @Test func mutationsPersistAcrossInstances() {
@@ -24,20 +25,24 @@ struct SettingsStoreTests {
         first.showsRichText = false
         first.pastesRichText = false
         first.useHorizontalLayout = false
+        first.setPanelSize(CGSize(width: 123, height: 456), for: 3)
 
         let second = SettingsStore(defaults: defaults)
         #expect(second.maxHistoryItems == 200)
         #expect(second.showsRichText == false)
         #expect(second.pastesRichText == false)
         #expect(second.useHorizontalLayout == false)
+        #expect(second.panelSize(for: 3) == CGSize(width: 123, height: 456))
     }
 
     @Test func snapshotMatchesCurrentValues() {
         let store = SettingsStore(defaults: makeDefaults())
         store.maxHistoryItems = 750
+        store.setPanelSize(CGSize(width: 111, height: 222), for: PanelPosition.bottom.rawValue)
         let snap = store.snapshot
         #expect(snap.maxHistoryItems == 750)
         #expect(snap.showsRichText == true)
+        #expect(snap.panelSizeByPosition[PanelPosition.bottom.rawValue] == PanelSize(width: 111, height: 222))
     }
 
     @Test func corruptStoredDataFallsBackToDefaults() {

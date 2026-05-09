@@ -5,4 +5,10 @@ struct VeerSettings: Codable, Sendable, Equatable {
     var showsRichText: Bool = true
     var pastesRichText: Bool = true
     var useHorizontalLayout: Bool = true
+    var panelSizeByPosition: [Int: PanelSize] = [:]
+}
+
+struct PanelSize: Codable, Sendable, Equatable {
+    var width: Double
+    var height: Double
 }

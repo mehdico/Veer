@@ -10,6 +10,7 @@ final class SettingsStore {
     var showsRichText: Bool { didSet { persist() } }
     var pastesRichText: Bool { didSet { persist() } }
     var useHorizontalLayout: Bool { didSet { persist() } }
+    private(set) var panelSizeByPosition: [Int: PanelSize] { didSet { persist() } }
 
     @ObservationIgnored let defaults: UserDefaults
 
@@ -20,6 +21,7 @@ final class SettingsStore {
         self.showsRichText = loaded.showsRichText
         self.pastesRichText = loaded.pastesRichText
         self.useHorizontalLayout = loaded.useHorizontalLayout
+        self.panelSizeByPosition = loaded.panelSizeByPosition
     }
 
     var snapshot: VeerSettings {
@@ -27,8 +29,20 @@ final class SettingsStore {
             maxHistoryItems: maxHistoryItems,
             showsRichText: showsRichText,
             pastesRichText: pastesRichText,
-            useHorizontalLayout: useHorizontalLayout
+            useHorizontalLayout: useHorizontalLayout,
+            panelSizeByPosition: panelSizeByPosition
         )
+    }
+
+    func panelSize(for positionRawValue: Int) -> CGSize? {
+        guard let stored = panelSizeByPosition[positionRawValue] else { return nil }
+        return CGSize(width: stored.width, height: stored.height)
+    }
+
+    func setPanelSize(_ size: CGSize, for positionRawValue: Int) {
+        var next = panelSizeByPosition
+        next[positionRawValue] = PanelSize(width: size.width, height: size.height)
+        panelSizeByPosition = next
     }
 
     private static func load(from defaults: UserDefaults) -> VeerSettings {

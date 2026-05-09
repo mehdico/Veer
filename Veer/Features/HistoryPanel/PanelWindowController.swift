@@ -30,8 +30,10 @@ final class PanelWindowController: NSWindowController, NSWindowDelegate {
         if coordinator.isShown {
             let screen = coordinator.currentScreen()
             if let screen {
+                let base = coordinator.position.baseForSizing
+                let override = env.settings.panelSize(for: base.rawValue).map { NSSize(width: $0.width, height: $0.height) }
                 window.setFrame(
-                    coordinator.position.frame(for: screen, horizontal: coordinator.horizontal),
+                    coordinator.position.frame(for: screen, horizontal: coordinator.horizontal, overrideSize: override),
                     display: true
                 )
             }
@@ -40,6 +42,12 @@ final class PanelWindowController: NSWindowController, NSWindowDelegate {
         } else {
             window.orderOut(nil)
         }
+    }
+
+    func windowDidResize(_ notification: Notification) {
+        guard let window, coordinator.isShown else { return }
+        let base = coordinator.position.baseForSizing
+        env.settings.setPanelSize(window.frame.size, for: base.rawValue)
     }
 
     func windowDidResignKey(_ notification: Notification) {

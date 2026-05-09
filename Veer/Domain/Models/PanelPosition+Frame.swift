@@ -2,12 +2,13 @@ import AppKit
 import CoreGraphics
 
 extension PanelPosition {
-    func frame(for screen: NSScreen, horizontal: Bool) -> NSRect {
+    func frame(for screen: NSScreen, horizontal: Bool, overrideSize: NSSize? = nil) -> NSRect {
         Self.computeFrame(
             screenFrame: screen.frame,
             visibleFrame: screen.visibleFrame,
             horizontal: horizontal,
-            position: self
+            position: self,
+            overrideSize: overrideSize
         )
     }
 
@@ -15,34 +16,52 @@ extension PanelPosition {
         screenFrame screen: NSRect,
         visibleFrame: NSRect,
         horizontal: Bool,
-        position: PanelPosition
+        position: PanelPosition,
+        overrideSize: NSSize? = nil
     ) -> NSRect {
         let menuHeight = horizontal ? Constants.Panel.horizontalHeight : Constants.Panel.verticalHeight
         let width = Constants.Panel.width
 
         switch position {
         case .right:
-            return NSRect(x: screen.maxX - width, y: screen.minY, width: width, height: visibleFrame.height)
+            let w = overrideSize?.width ?? width
+            let h = overrideSize?.height ?? visibleFrame.height
+            return NSRect(x: screen.maxX - w, y: screen.minY, width: w, height: min(h, visibleFrame.height))
         case .left:
-            return NSRect(x: screen.minX, y: screen.minY, width: width, height: visibleFrame.height)
+            let w = overrideSize?.width ?? width
+            let h = overrideSize?.height ?? visibleFrame.height
+            return NSRect(x: screen.minX, y: screen.minY, width: w, height: min(h, visibleFrame.height))
         case .top:
-            return NSRect(x: screen.minX, y: visibleFrame.maxY - menuHeight, width: screen.width, height: menuHeight)
+            let h = overrideSize?.height ?? menuHeight
+            let w = overrideSize?.width ?? screen.width
+            return NSRect(x: screen.minX, y: visibleFrame.maxY - min(h, visibleFrame.height), width: min(w, screen.width), height: min(h, visibleFrame.height))
         case .bottom:
             let h = floor(menuHeight * 1.7)
-            return NSRect(x: screen.minX, y: screen.minY, width: screen.width, height: h)
+            let useH = overrideSize?.height ?? h
+            let useW = overrideSize?.width ?? screen.width
+            return NSRect(x: screen.minX, y: screen.minY, width: min(useW, screen.width), height: min(useH, visibleFrame.height))
         case .bottomSmall:
-            return NSRect(x: screen.minX, y: screen.minY, width: screen.width, height: floor(menuHeight))
+            let h = floor(menuHeight)
+            let useH = overrideSize?.height ?? h
+            let useW = overrideSize?.width ?? screen.width
+            return NSRect(x: screen.minX, y: screen.minY, width: min(useW, screen.width), height: min(useH, visibleFrame.height))
         case .bottomLarge:
             let h = floor(menuHeight * 2.4)
-            return NSRect(x: screen.minX, y: screen.minY, width: screen.width, height: h)
+            let useH = overrideSize?.height ?? h
+            let useW = overrideSize?.width ?? screen.width
+            return NSRect(x: screen.minX, y: screen.minY, width: min(useW, screen.width), height: min(useH, visibleFrame.height))
         case .centerExtraSmall:
-            return centered(NSSize(width: screen.width / 3, height: screen.height / 3), in: screen)
+            let size = overrideSize ?? NSSize(width: screen.width / 3, height: screen.height / 3)
+            return centered(size, in: screen)
         case .centerSmall:
-            return centered(NSSize(width: screen.width / 2, height: screen.height / 2), in: screen)
+            let size = overrideSize ?? NSSize(width: screen.width / 2, height: screen.height / 2)
+            return centered(size, in: screen)
         case .centerMedium:
-            return centered(NSSize(width: screen.width * 0.7, height: screen.height * 0.7), in: screen)
+            let size = overrideSize ?? NSSize(width: screen.width * 0.7, height: screen.height * 0.7)
+            return centered(size, in: screen)
         case .centerLarge:
-            return centered(NSSize(width: screen.width * 0.85, height: screen.height * 0.85), in: screen)
+            let size = overrideSize ?? NSSize(width: screen.width * 0.85, height: screen.height * 0.85)
+            return centered(size, in: screen)
         case .fullScreen:
             return screen
         }

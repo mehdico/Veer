@@ -18,13 +18,13 @@ enum PanelPosition: Int, Codable, CaseIterable, Sendable {
         case .right: "Right"
         case .left: "Left"
         case .top: "Top"
-        case .bottom: "Bottom (Medium)"
-        case .bottomSmall: "Bottom (Small)"
-        case .bottomLarge: "Bottom (Large)"
-        case .centerExtraSmall: "Center (Extra Small)"
-        case .centerSmall: "Center (Small)"
-        case .centerMedium: "Center (Medium)"
-        case .centerLarge: "Center (Large)"
+        case .bottom: "Bottom"
+        case .bottomSmall: "Bottom"
+        case .bottomLarge: "Bottom"
+        case .centerExtraSmall: "Center"
+        case .centerSmall: "Center"
+        case .centerMedium: "Center"
+        case .centerLarge: "Center"
         case .fullScreen: "Full Screen"
         }
     }
@@ -46,9 +46,20 @@ enum PanelPosition: Int, Codable, CaseIterable, Sendable {
     }
 
     static let menuOrder: [PanelPosition] = [
-        .right, .left, .top,
-        .bottomSmall, .bottom, .bottomLarge,
-        .centerExtraSmall, .centerSmall, .centerMedium, .centerLarge,
+        .right, .left, .top, .bottom, .centerMedium,
         .fullScreen,
     ]
+}
+
+extension PanelPosition {
+    var baseForSizing: PanelPosition {
+        switch self {
+        case .bottomSmall, .bottom, .bottomLarge:
+            return .bottom
+        case .centerExtraSmall, .centerSmall, .centerMedium, .centerLarge:
+            return .centerMedium
+        case .left, .right, .top, .fullScreen:
+            return self
+        }
+    }
 }
