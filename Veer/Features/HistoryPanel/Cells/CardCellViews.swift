@@ -6,36 +6,41 @@ import SwiftUI
 private struct CardChrome<Content: View>: View {
     let isSelected: Bool
     let identifier: String
+    let sourceBundleId: String?
     @ViewBuilder let content: () -> Content
 
     var body: some View {
-        content()
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .padding(10)
-            .background(.ultraThinMaterial)
-            .overlay(
-                RoundedRectangle(cornerRadius: Constants.UI.cardCornerRadius)
-                    .stroke(
-                        LinearGradient(
-                            colors: isSelected ? [Color.accentColor, Color.accentColor.opacity(0.5)] : [Color.white.opacity(0.2), Color.clear],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: isSelected ? 2 : Constants.UI.glassBorderWidth
-                    )
-            )
-            .clipShape(RoundedRectangle(cornerRadius: Constants.UI.cardCornerRadius))
-            .shadow(color: isSelected ? Color.accentColor.opacity(0.4) : Color.black.opacity(0.1), radius: isSelected ? 12 : 4)
-            .scaleEffect(isSelected ? 1.02 : 1.0)
-            .accessibilityIdentifier(identifier)
-            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+        VStack(spacing: 0) {
+            if let sourceBundleId {
+                sourceHeader(sourceBundleId)
+                    .padding(.bottom, 6)
+            }
+            content()
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+        .padding(10)
+        .background(.ultraThinMaterial)
+        .overlay(
+            RoundedRectangle(cornerRadius: Constants.UI.cardCornerRadius)
+                .stroke(
+                    LinearGradient(
+                        colors: isSelected ? [Color.accentColor, Color.accentColor.opacity(0.5)] : [Color.white.opacity(0.2), Color.clear],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: isSelected ? 2 : Constants.UI.glassBorderWidth
+                )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: Constants.UI.cardCornerRadius))
+        .shadow(color: isSelected ? Color.accentColor.opacity(0.4) : Color.black.opacity(0.1), radius: isSelected ? 12 : 4)
+        .scaleEffect(isSelected ? 1.02 : 1.0)
+        .accessibilityIdentifier(identifier)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
     }
-}
 
-private func sourceFooter(_ bundleId: String?) -> some View {
-    Group {
-        if let bundleId,
-           let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId) {
+    @ViewBuilder
+    private func sourceHeader(_ bundleId: String) -> some View {
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId) {
             HStack(spacing: 4) {
                 Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
                     .resizable()
@@ -44,9 +49,8 @@ private func sourceFooter(_ bundleId: String?) -> some View {
                     .font(.system(size: 10))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+                Spacer()
             }
-        } else {
-            EmptyView()
         }
     }
 }
@@ -56,14 +60,10 @@ struct TextCardView: View {
     let isSelected: Bool
 
     var body: some View {
-        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyTextCellView) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(snapshot.preview ?? "(no preview)")
-                    .font(.system(size: 14))
-                    .lineLimit(nil)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                sourceFooter(snapshot.sourceBundleId)
-            }
+        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyTextCellView, sourceBundleId: snapshot.sourceBundleId) {
+            Text(snapshot.preview ?? "(no preview)")
+                .font(.system(size: 14))
+                .lineLimit(nil)
         }
     }
 }
@@ -76,19 +76,14 @@ struct RichTextCardView: View {
     @State private var attributed: AttributedString?
 
     var body: some View {
-        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyRichTextCellView) {
-            VStack(alignment: .leading, spacing: 8) {
-                if let attributed {
-                    Text(attributed)
-                        .lineLimit(nil)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                } else {
-                    Text(snapshot.preview ?? "")
-                        .font(.system(size: 14))
-                        .lineLimit(nil)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                }
-                sourceFooter(snapshot.sourceBundleId)
+        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyRichTextCellView, sourceBundleId: snapshot.sourceBundleId) {
+            if let attributed {
+                Text(attributed)
+                    .lineLimit(nil)
+            } else {
+                Text(snapshot.preview ?? "")
+                    .font(.system(size: 14))
+                    .lineLimit(nil)
             }
         }
         .task(id: snapshot.id) { loadRTF() }
@@ -111,22 +106,19 @@ struct ImageCardView: View {
     let isSelected: Bool
 
     var body: some View {
-        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyTiffCellView) {
-            VStack(spacing: 6) {
-                if let data = snapshot.thumbnailPNG, let image = NSImage(data: data) {
-                    Image(nsImage: image)
-                        .resizable()
-                        .interpolation(.medium)
-                        .scaledToFit()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    Image(systemName: "photo")
-                        .resizable()
-                        .scaledToFit()
-                        .padding(20)
-                        .foregroundStyle(.secondary)
-                }
-                sourceFooter(snapshot.sourceBundleId)
+        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyTiffCellView, sourceBundleId: snapshot.sourceBundleId) {
+            if let data = snapshot.thumbnailPNG, let image = NSImage(data: data) {
+                Image(nsImage: image)
+                    .resizable()
+                    .interpolation(.medium)
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                Image(systemName: "photo")
+                    .resizable()
+                    .scaledToFit()
+                    .padding(20)
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -141,7 +133,7 @@ struct ColorCardView: View {
     @State private var hex: String?
 
     var body: some View {
-        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyColorCellView) {
+        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyColorCellView, sourceBundleId: snapshot.sourceBundleId) {
             ZStack(alignment: .bottomLeading) {
                 RoundedRectangle(cornerRadius: 6)
                     .fill(color.map { Color(nsColor: $0) } ?? Color.gray)
@@ -175,7 +167,7 @@ struct PdfCardView: View {
     @State private var thumbnail: NSImage?
 
     var body: some View {
-        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyPdfCellView) {
+        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyPdfCellView, sourceBundleId: snapshot.sourceBundleId) {
             VStack(spacing: 6) {
                 if let thumbnail {
                     Image(nsImage: thumbnail)
@@ -216,7 +208,7 @@ struct FileCardView: View {
     @State private var thumbnail: NSImage?
 
     var body: some View {
-        CardChrome(isSelected: isSelected, identifier: identifier) {
+        CardChrome(isSelected: isSelected, identifier: identifier, sourceBundleId: snapshot.sourceBundleId) {
             VStack(spacing: 6) {
                 imageView
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
