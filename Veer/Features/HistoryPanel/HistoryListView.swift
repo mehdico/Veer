@@ -55,6 +55,8 @@ struct HistoryListView: View {
         )
     }
 
+    @Namespace private var animation
+
     private var list: some View {
         ScrollViewReader { proxy in
             ScrollView {
@@ -71,6 +73,12 @@ struct HistoryListView: View {
                                 isSelected: index == viewModel.selectedIndex,
                                 viewModel: viewModel
                             )
+                            .transition(
+                                .asymmetric(
+                                    insertion: .opacity.combined(with: .scale(scale: 0.98)).combined(with: .offset(y: 4)),
+                                    removal: .opacity.combined(with: .scale(scale: 0.98))
+                                )
+                            )
                             .id(snapshot.id)
                             .contentShape(Rectangle())
                             .onTapGesture {
@@ -81,10 +89,22 @@ struct HistoryListView: View {
                 }
                 .padding(.horizontal, 4)
                 .padding(.vertical, 4)
+                .animation(viewModel.searchText.isEmpty ? nil : .spring(response: 0.35, dampingFraction: 0.8), value: viewModel.filteredIDs)
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.yippyTableView)
             .onChange(of: viewModel.selectedIndex) { _, newIndex in
                 // Scroll removed to eliminate delay
+            }
+            .onChange(of: viewModel.searchText) { _, newValue in
+                if let firstID = viewModel.filteredItems.first?.id {
+                    if newValue.isEmpty {
+                        proxy.scrollTo(firstID, anchor: .top)
+                    } else {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            proxy.scrollTo(firstID, anchor: .top)
+                        }
+                    }
+                }
             }
             .onChange(of: viewModel.panel.isShown) { _, shown in
                 if shown, let firstID = viewModel.filteredItems.first?.id {

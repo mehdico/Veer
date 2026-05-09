@@ -55,6 +55,8 @@ struct HistoryCardStripView: View {
         )
     }
 
+    @Namespace private var animation
+
     private var cardScroll: some View {
         GeometryReader { geo in
             let verticalPadding: CGFloat = 16
@@ -72,12 +74,19 @@ struct HistoryCardStripView: View {
                     } else {
                         ForEach(Array(items.enumerated()), id: \.element.id) { index, snapshot in
                             cardCell(index: index, snapshot: snapshot, side: side)
+                                .transition(
+                                    .asymmetric(
+                                        insertion: .opacity.combined(with: .scale(scale: 0.98)).combined(with: .offset(y: 4)),
+                                        removal: .opacity.combined(with: .scale(scale: 0.98))
+                                    )
+                                )
                         }
                     }
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, verticalPadding / 2)
                 .scrollTargetLayout()
+                .animation(viewModel.searchText.isEmpty ? nil : .spring(response: 0.35, dampingFraction: 0.8), value: viewModel.filteredIDs)
             }
             .scrollTargetBehavior(.viewAligned)
             .scrollPosition(id: $firstVisibleID, anchor: .leading)
@@ -114,8 +123,15 @@ struct HistoryCardStripView: View {
                     firstVisibleID = items[target].id
                 }
             }
-            .onChange(of: viewModel.searchText) { _, _ in
-                firstVisibleID = viewModel.filteredItems.first?.id
+            .onChange(of: viewModel.searchText) { _, newValue in
+                if newValue.isEmpty {
+                    // Reset scroll instantly when clearing to prevent jumping
+                    firstVisibleID = viewModel.filteredItems.first?.id
+                } else {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        firstVisibleID = viewModel.filteredItems.first?.id
+                    }
+                }
             }
         }
     }
