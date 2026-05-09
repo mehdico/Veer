@@ -10,9 +10,18 @@ struct CellChrome<Content: View>: View {
             .padding(.vertical, 6)
             .padding(.horizontal, 10)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(isSelected ? Color.accentColor.opacity(0.25) : Color.clear)
+            .background(
+                ZStack {
+                    if isSelected {
+                        Color.accentColor.opacity(0.2)
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.accentColor.opacity(0.5), lineWidth: 1)
+                    }
+                }
+            )
             .clipShape(RoundedRectangle(cornerRadius: 8))
+            .shadow(color: isSelected ? Color.accentColor.opacity(0.3) : Color.clear, radius: 8, x: 0, y: 0)
             .accessibilityIdentifier(identifier)
-            .animation(.easeInOut(duration: 0.1), value: isSelected)
+            .animation(.spring(response: 0.2, dampingFraction: 0.8), value: isSelected)
     }
 }

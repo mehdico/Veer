@@ -15,11 +15,20 @@ private struct CardChrome<Content: View>: View {
             .background(.ultraThinMaterial)
             .overlay(
                 RoundedRectangle(cornerRadius: Constants.UI.cardCornerRadius)
-                    .stroke(isSelected ? Color.accentColor : Color.primary.opacity(0.1), lineWidth: isSelected ? 2 : Constants.UI.glassBorderWidth)
+                    .stroke(
+                        LinearGradient(
+                            colors: isSelected ? [Color.accentColor, Color.accentColor.opacity(0.5)] : [Color.white.opacity(0.2), Color.clear],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: isSelected ? 2 : Constants.UI.glassBorderWidth
+                    )
             )
             .clipShape(RoundedRectangle(cornerRadius: Constants.UI.cardCornerRadius))
+            .shadow(color: isSelected ? Color.accentColor.opacity(0.4) : Color.black.opacity(0.1), radius: isSelected ? 12 : 4)
+            .scaleEffect(isSelected ? 1.02 : 1.0)
             .accessibilityIdentifier(identifier)
-            .animation(.none, value: isSelected)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
     }
 }
 

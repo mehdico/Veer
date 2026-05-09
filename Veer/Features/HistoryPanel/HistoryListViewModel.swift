@@ -235,6 +235,7 @@ final class HistoryListViewModel {
             let candidates = items.map { SearchCandidate(id: $0.id, text: $0.preview ?? "") }
             filteredIDs = searchEngine.search(query: searchText, in: candidates)
         }
+        selectedIndex = 0
         clampSelection()
     }
 
