@@ -69,10 +69,6 @@ struct HistoryListView: View {
                             )
                             .id(snapshot.id)
                             .contentShape(Rectangle())
-                            .onTapGesture(count: 2) {
-                                viewModel.selectedIndex = index
-                                Task { await viewModel.pasteSelected() }
-                            }
                             .onTapGesture {
                                 viewModel.selectedIndex = index
                             }
@@ -84,9 +80,7 @@ struct HistoryListView: View {
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.yippyTableView)
             .onChange(of: viewModel.selectedIndex) { _, newIndex in
-                let items = viewModel.filteredItems
-                guard newIndex >= 0, newIndex < items.count else { return }
-                proxy.scrollTo(items[newIndex].id, anchor: .center)
+                // Scroll removed to eliminate delay
             }
             .onChange(of: viewModel.panel.isShown) { _, shown in
                 if shown, let firstID = viewModel.filteredItems.first?.id {

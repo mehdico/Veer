@@ -19,6 +19,7 @@ private struct CardChrome<Content: View>: View {
             )
             .clipShape(RoundedRectangle(cornerRadius: 8))
             .accessibilityIdentifier(identifier)
+            .animation(.none, value: isSelected)
     }
 }
 

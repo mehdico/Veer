@@ -132,10 +132,6 @@ struct HistoryCardStripView: View {
         }
         .id(snapshot.id)
         .contentShape(Rectangle())
-        .onTapGesture(count: 2) {
-            viewModel.selectedIndex = index
-            Task { await viewModel.pasteSelected() }
-        }
         .onTapGesture {
             viewModel.selectedIndex = index
         }

@@ -138,6 +138,10 @@ final class HistoryListViewModel {
         return filteredIDs.compactMap { lookup[$0] }
     }
 
+    var filteredItemsLookup: [UUID: ClipItemSnapshot] {
+        Dictionary(uniqueKeysWithValues: filteredItems.map { ($0.id, $0) })
+    }
+
     func navigateUp(by step: Int = 1) {
         guard !filteredItems.isEmpty else { return }
         selectedIndex = max(0, selectedIndex - step)

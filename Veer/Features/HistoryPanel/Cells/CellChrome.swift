@@ -13,5 +13,6 @@ struct CellChrome<Content: View>: View {
             .background(isSelected ? Color.accentColor.opacity(0.18) : Color.clear)
             .clipShape(RoundedRectangle(cornerRadius: 6))
             .accessibilityIdentifier(identifier)
+            .animation(.none, value: isSelected)
     }
 }
