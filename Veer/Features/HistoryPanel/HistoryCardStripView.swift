@@ -70,11 +70,11 @@ struct HistoryCardStripView: View {
 
             ScrollView(isVertical ? .vertical : .horizontal, showsIndicators: false) {
                 cardStack(isVertical: isVertical, side: side)
-                    .padding(isVertical ? .vertical : .horizontal, 8)
                     .padding(isVertical ? .horizontal : .vertical, padding / 2)
                     .scrollTargetLayout()
                     .animation(viewModel.searchText.isEmpty ? nil : .spring(response: 0.35, dampingFraction: 0.8), value: viewModel.filteredIDs)
             }
+            .contentMargins(isVertical ? .vertical : .horizontal, 6, for: .scrollContent)
             .scrollTargetBehavior(.viewAligned)
             .scrollPosition(id: $firstVisibleID, anchor: isVertical ? .top : .leading)
             .accessibilityIdentifier(AccessibilityIdentifiers.yippyTableView)
