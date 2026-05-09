@@ -50,6 +50,17 @@ final class PanelWindowController: NSWindowController, NSWindowDelegate {
         guard let window, coordinator.isShown else { return }
         let base = coordinator.position.baseForSizing
         env.settings.setPanelSize(window.frame.size, for: base.rawValue)
+
+        if coordinator.position.isCentered, let screen = window.screen ?? coordinator.currentScreen() {
+            let size = window.frame.size
+            let origin = NSPoint(
+                x: screen.frame.minX + (screen.frame.width - size.width) / 2,
+                y: screen.frame.minY + (screen.frame.height - size.height) / 2
+            )
+            if window.frame.origin != origin {
+                window.setFrameOrigin(origin)
+            }
+        }
     }
 
     func windowDidResignKey(_ notification: Notification) {

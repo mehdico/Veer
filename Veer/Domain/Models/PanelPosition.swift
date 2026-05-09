@@ -48,6 +48,13 @@ enum PanelPosition: Int, Codable, CaseIterable, Sendable {
 }
 
 extension PanelPosition {
+    var isCentered: Bool {
+        switch self {
+        case .centerExtraSmall, .centerSmall, .centerMedium, .centerLarge: true
+        default: false
+        }
+    }
+
     var baseForSizing: PanelPosition {
         switch self {
         case .bottomSmall, .bottom, .bottomLarge:
