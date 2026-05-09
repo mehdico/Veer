@@ -12,12 +12,12 @@ private struct CardChrome<Content: View>: View {
         content()
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .padding(10)
-            .background(Color.primary.opacity(0.04))
+            .background(.ultraThinMaterial)
             .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
+                RoundedRectangle(cornerRadius: Constants.UI.cardCornerRadius)
+                    .stroke(isSelected ? Color.accentColor : Color.primary.opacity(0.1), lineWidth: isSelected ? 2 : Constants.UI.glassBorderWidth)
             )
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .clipShape(RoundedRectangle(cornerRadius: Constants.UI.cardCornerRadius))
             .accessibilityIdentifier(identifier)
             .animation(.none, value: isSelected)
     }

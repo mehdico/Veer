@@ -12,10 +12,12 @@ final class PanelWindowController: NSWindowController, NSWindowDelegate {
         let window = PanelWindow()
         super.init(window: window)
         window.delegate = self
+        
         let host = NSHostingView(rootView: HistoryRootView(env: env))
-        host.frame = window.contentView?.bounds ?? .zero
+        host.layer?.backgroundColor = .clear
+        host.frame = window.visualEffectView?.bounds ?? .zero
         host.autoresizingMask = [.width, .height]
-        window.contentView = host
+        window.visualEffectView?.addSubview(host)
 
         coordinator.onStateChange = { [weak self] in self?.applyState() }
         applyState()

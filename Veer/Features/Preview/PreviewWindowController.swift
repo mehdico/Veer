@@ -12,9 +12,10 @@ final class PreviewWindowController: NSWindowController {
         let window = PreviewWindow()
         super.init(window: window)
         let host = NSHostingView(rootView: PreviewRootView(viewModel: env.historyViewModel, coordinator: coordinator))
-        host.frame = window.contentView?.bounds ?? .zero
+        host.layer?.backgroundColor = .clear
+        host.frame = window.visualEffectView?.bounds ?? .zero
         host.autoresizingMask = [.width, .height]
-        window.contentView = host
+        window.visualEffectView?.addSubview(host)
         window.center()
 
         coordinator.onStateChange = { [weak self] in self?.applyState() }

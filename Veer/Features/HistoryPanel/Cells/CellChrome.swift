@@ -10,9 +10,9 @@ struct CellChrome<Content: View>: View {
             .padding(.vertical, 6)
             .padding(.horizontal, 10)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(isSelected ? Color.accentColor.opacity(0.18) : Color.clear)
-            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .background(isSelected ? Color.accentColor.opacity(0.25) : Color.clear)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
             .accessibilityIdentifier(identifier)
-            .animation(.none, value: isSelected)
+            .animation(.easeInOut(duration: 0.1), value: isSelected)
     }
 }

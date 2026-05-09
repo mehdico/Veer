@@ -11,11 +11,29 @@ final class PanelWindow: NSPanel {
         isFloatingPanel = true
         level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.popUpMenuWindow)) - 1)
         hidesOnDeactivate = false
-        isMovableByWindowBackground = false
-        backgroundColor = .windowBackgroundColor
+        isMovableByWindowBackground = true
+        backgroundColor = .clear
+        isOpaque = false
         hasShadow = true
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
         setAccessibilityIdentifier(AccessibilityIdentifiers.yippyWindow)
+
+        setupVisualEffectView()
+    }
+
+    private(set) var visualEffectView: NSVisualEffectView?
+
+    private func setupVisualEffectView() {
+        let vev = NSVisualEffectView()
+        vev.material = .hudWindow
+        vev.blendingMode = .behindWindow
+        vev.state = .active
+        vev.wantsLayer = true
+        vev.layer?.cornerRadius = Constants.UI.windowCornerRadius
+        vev.setAccessibilityIdentifier(AccessibilityIdentifiers.yippyWindow)
+        
+        contentView = vev
+        self.visualEffectView = vev
     }
 
     override var canBecomeKey: Bool { true }

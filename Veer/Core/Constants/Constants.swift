@@ -28,4 +28,11 @@ enum Constants {
         ]
         static let maxTypesPerItem = 32
     }
+
+    enum UI {
+        static let windowCornerRadius: CGFloat = 16
+        static let cardCornerRadius: CGFloat = 12
+        static let glassOpacity: Double = 0.4
+        static let glassBorderWidth: CGFloat = 0.5
+    }
 }
