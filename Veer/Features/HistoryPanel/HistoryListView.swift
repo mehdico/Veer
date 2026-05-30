@@ -7,11 +7,7 @@ struct HistoryListView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            searchHeader
-                .padding(.horizontal, 8)
-                .padding(.top, 8)
-                .padding(.bottom, 4)
-            Divider()
+            PanelSearchChrome(searchText: viewModel.searchText)
             list
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -33,29 +29,6 @@ struct HistoryListView: View {
             PanelKeyHandler.handle(press, viewModel: viewModel)
         }
     }
-
-    private var searchHeader: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-            Text(viewModel.searchText.isEmpty ? "Type to search" : viewModel.searchText)
-                .foregroundStyle(viewModel.searchText.isEmpty ? Color.secondary : Color.primary)
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .accessibilityIdentifier("panelSearchField")
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(.thinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.primary.opacity(0.1), lineWidth: Constants.UI.glassBorderWidth)
-        )
-    }
-
-    @Namespace private var animation
 
     private var list: some View {
         ScrollViewReader { proxy in

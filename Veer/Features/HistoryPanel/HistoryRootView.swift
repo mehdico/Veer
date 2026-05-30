@@ -22,12 +22,17 @@ struct HistoryRootView: View {
         .onChange(of: coordinator.isShown) { _, shown in
             if shown {
                 env.historyViewModel.resetForShow()
+                coordinator.syncSearchChromeHeight(isSearching: false)
             }
+        }
+        .onChange(of: env.historyViewModel.searchText.isEmpty) { _, isEmpty in
+            coordinator.syncSearchChromeHeight(isSearching: !isEmpty)
         }
         .opacity(isVisible ? 1 : 0)
         .scaleEffect(isVisible ? 1 : 0.95)
         .blur(radius: isVisible ? 0 : 10)
         .onAppear {
+            coordinator.syncSearchChromeHeight(isSearching: !env.historyViewModel.searchText.isEmpty)
             withAnimation(.spring(response: 0.4, dampingFraction: 0.7, blendDuration: 0)) {
                 isVisible = true
             }

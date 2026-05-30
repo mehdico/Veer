@@ -29,7 +29,7 @@ final class PanelWindow: NSPanel {
         vev.blendingMode = .behindWindow
         vev.state = .active
         vev.wantsLayer = true
-        vev.layer?.cornerRadius = Constants.UI.windowCornerRadius
+        vev.layer?.cornerRadius = 0
         vev.setAccessibilityIdentifier(AccessibilityIdentifiers.yippyWindow)
         
         contentView = vev

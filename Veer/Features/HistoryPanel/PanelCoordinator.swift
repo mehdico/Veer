@@ -8,6 +8,7 @@ final class PanelCoordinator {
     var isShown: Bool = false
     var position: PanelPosition = .bottom
     var horizontal: Bool = true
+    var searchChromeHeight: CGFloat = 0
 
     @ObservationIgnored
     var onStateChange: (() -> Void)?
@@ -50,6 +51,13 @@ final class PanelCoordinator {
 
     func restorePreviousApp() {
         previousApp?.activate(options: [])
+    }
+
+    func syncSearchChromeHeight(isSearching: Bool) {
+        let next: CGFloat = isSearching ? Constants.Panel.searchBarHeight : 0
+        guard searchChromeHeight != next else { return }
+        searchChromeHeight = next
+        onStateChange?()
     }
 
     var effectiveHorizontal: Bool { horizontal }

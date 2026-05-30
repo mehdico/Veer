@@ -54,4 +54,14 @@ struct PanelCoordinatorTests {
         #expect(panel.position == .bottom)
         #expect(panel.horizontal == true)
     }
+
+    @Test func syncSearchChromeHeightSwitchesBetweenHiddenAndBar() {
+        let panel = PanelCoordinator()
+        #expect(panel.searchChromeHeight == 0)
+        panel.syncSearchChromeHeight(isSearching: true)
+        #expect(panel.searchChromeHeight == Constants.Panel.searchBarHeight)
+        panel.syncSearchChromeHeight(isSearching: true)
+        panel.syncSearchChromeHeight(isSearching: false)
+        #expect(panel.searchChromeHeight == 0)
+    }
 }

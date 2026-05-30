@@ -8,10 +8,7 @@ struct HistoryCardStripView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            searchHeader
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-            Divider()
+            PanelSearchChrome(searchText: viewModel.searchText)
             cardScroll
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -33,29 +30,6 @@ struct HistoryCardStripView: View {
             PanelKeyHandler.handle(press, viewModel: viewModel)
         }
     }
-
-    private var searchHeader: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-            Text(viewModel.searchText.isEmpty ? "Type to search" : viewModel.searchText)
-                .foregroundStyle(viewModel.searchText.isEmpty ? Color.secondary : Color.primary)
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .accessibilityIdentifier("panelSearchField")
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(.thinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.primary.opacity(0.1), lineWidth: Constants.UI.glassBorderWidth)
-        )
-    }
-
-    @Namespace private var animation
 
     private var cardScroll: some View {
         GeometryReader { geo in

@@ -5,6 +5,7 @@ enum Constants {
         static let width: CGFloat = 400
         static let verticalHeight: CGFloat = 420
         static let horizontalHeight: CGFloat = 220
+        static let searchBarHeight: CGFloat = 42
     }
 
     enum History {
