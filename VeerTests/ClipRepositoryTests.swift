@@ -127,10 +127,23 @@ struct ClipRepositoryTests {
         let repo = try makeRepo()
         let pngData = Self.makeSolidPNG(size: 80)
         let payload = ClipPayload(typed: [NSPasteboard.PasteboardType.png.rawValue: pngData])
-        _ = try repo.insert(payload: payload, sourceBundleId: nil)
+        let thumb = payload.thumbnailPNG()
+        _ = try repo.insert(payload: payload, sourceBundleId: nil, thumbnailPNG: thumb)
         let item = try repo.fetchAll(limit: 1).first
         #expect(item?.thumbnailPNG != nil)
         #expect((item?.thumbnailPNG?.count ?? 0) > 0)
+    }
+
+    @Test func thumbnailGeneratedFromJpegData() throws {
+        let pngData = Self.makeSolidPNG(size: 32)
+        guard let rep = NSBitmapImageRep(data: pngData),
+              let jpeg = rep.representation(using: .jpeg, properties: [.compressionFactor: 0.85])
+        else {
+            Issue.record("jpeg encode failed")
+            return
+        }
+        let payload = ClipPayload(typed: ["public.jpeg": jpeg])
+        #expect(payload.thumbnailPNG() != nil)
     }
 
     @Test func changesStreamEmitsOnInsertDeleteAndClear() async throws {

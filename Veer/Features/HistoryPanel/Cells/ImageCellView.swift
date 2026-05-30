@@ -25,18 +25,7 @@ struct ImageCellView: View {
         }
     }
 
-    @ViewBuilder
     private var thumbnail: some View {
-        if let data = snapshot.thumbnailPNG, let image = NSImage(data: data) {
-            Image(nsImage: image)
-                .resizable()
-                .interpolation(.medium)
-                .scaledToFit()
-        } else {
-            Image(systemName: "photo")
-                .resizable()
-                .scaledToFit()
-                .foregroundStyle(.secondary)
-        }
+        ClipThumbnailImage(pngData: snapshot.thumbnailPNG)
     }
 }

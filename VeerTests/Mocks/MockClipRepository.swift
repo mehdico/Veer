@@ -31,7 +31,12 @@ final class MockClipRepository: ClipRepository {
         changeContinuations.removeAll()
     }
 
-    func insert(payload: ClipPayload, sourceBundleId: String?, thumbnailPNG: Data?) throws -> InsertOutcome {
+    func insert(
+        payload: ClipPayload,
+        sourceBundleId: String?,
+        thumbnailPNG: Data?,
+        payloadDigest: Data?
+    ) throws -> InsertOutcome {
         if let insertError { throw insertError }
         inserted.append((payload, sourceBundleId, thumbnailPNG))
         let outcome = nextOutcome ?? .inserted(UUID())

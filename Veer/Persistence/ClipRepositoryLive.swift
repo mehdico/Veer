@@ -33,7 +33,12 @@ final class ClipRepositoryLive: ClipRepository {
         changeContinuations.removeAll()
     }
 
-    func insert(payload: ClipPayload, sourceBundleId: String?, thumbnailPNG: Data?) throws -> InsertOutcome {
+    func insert(
+        payload: ClipPayload,
+        sourceBundleId: String?,
+        thumbnailPNG: Data?,
+        payloadDigest: Data?
+    ) throws -> InsertOutcome {
         if payload.isEmpty {
             logger.info("insert rejected: empty payload (bundle=\(sourceBundleId ?? "nil"))")
             return .rejectedEmpty
@@ -43,7 +48,7 @@ final class ClipRepositoryLive: ClipRepository {
             return .rejectedDenyListed
         }
 
-        let digest = payload.digest()
+        let digest = payloadDigest ?? payload.digest()
         if let mostRecent = try fetchMostRecent(), mostRecent.payloadDigest == digest {
             logger.info("insert rejected: duplicate of most recent (preview=\(payload.plainTextPreview() ?? "<binary>"))")
             return .rejectedDuplicate
@@ -53,7 +58,7 @@ final class ClipRepositoryLive: ClipRepository {
             sourceBundleId: sourceBundleId,
             typeRawValues: payload.typed.keys.sorted(),
             preview: payload.plainTextPreview(),
-            thumbnailPNG: thumbnailPNG ?? payload.thumbnailPNG(),
+            thumbnailPNG: thumbnailPNG,
             payloadDigest: digest
         )
         for (type, data) in payload.typed {

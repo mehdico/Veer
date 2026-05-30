@@ -110,7 +110,7 @@ final class HistoryListViewModel {
         let stream = repository.changes
         refreshTask = Task { @MainActor [weak self] in
             for await _ in stream {
-                self?.refresh()
+                self?.applyRepositoryChange()
             }
         }
     }
@@ -121,8 +121,29 @@ final class HistoryListViewModel {
     }
 
     func refresh() {
-        let fetched = (try? repository.fetchAll(limit: nil)) ?? []
+        let limit = repository.maxItems
+        let fetched = (try? repository.fetchAll(limit: limit)) ?? []
         items = fetched.map(ClipItemSnapshot.init)
+        runSearch()
+    }
+
+    private func applyRepositoryChange() {
+        let limit = repository.maxItems
+        guard let fetched = try? repository.fetchAll(limit: limit) else { return }
+        let snapshots = fetched.map(ClipItemSnapshot.init)
+        if snapshots.count == items.count + 1,
+           let newFirst = snapshots.first,
+           items.first?.id != newFirst.id
+        {
+            items.insert(newFirst, at: 0)
+            if items.count > limit {
+                items.removeLast(items.count - limit)
+            }
+        } else if snapshots != items {
+            items = snapshots
+        } else {
+            return
+        }
         runSearch()
     }
 

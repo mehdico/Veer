@@ -107,19 +107,9 @@ struct ImageCardView: View {
 
     var body: some View {
         CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyTiffCellView, sourceBundleId: snapshot.sourceBundleId) {
-            if let data = snapshot.thumbnailPNG, let image = NSImage(data: data) {
-                Image(nsImage: image)
-                    .resizable()
-                    .interpolation(.medium)
-                    .scaledToFit()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                Image(systemName: "photo")
-                    .resizable()
-                    .scaledToFit()
-                    .padding(20)
-                    .foregroundStyle(.secondary)
-            }
+            ClipThumbnailImage(pngData: snapshot.thumbnailPNG)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(snapshot.thumbnailPNG == nil ? 20 : 0)
         }
     }
 }

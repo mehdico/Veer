@@ -34,20 +34,22 @@ final class ClipIngestor {
         (try? repository.insert(
             payload: event.payload,
             sourceBundleId: event.sourceBundleId,
-            thumbnailPNG: nil
+            thumbnailPNG: nil,
+            payloadDigest: nil
         )) ?? .rejectedEmpty
     }
 
     private func ingestAsync(_ event: MonitorEvent) async {
         let payload = event.payload
-        let thumb = await Task.detached(priority: .utility) {
-            payload.thumbnailPNG()
+        let prepared = await Task.detached(priority: .utility) {
+            (payload.thumbnailPNG(), payload.digest())
         }.value
         do {
             let outcome = try repository.insert(
                 payload: payload,
                 sourceBundleId: event.sourceBundleId,
-                thumbnailPNG: thumb
+                thumbnailPNG: prepared.0,
+                payloadDigest: prepared.1
             )
             logger.info("ingest outcome: \(String(describing: outcome)) bundle=\(event.sourceBundleId ?? "nil")")
         } catch {

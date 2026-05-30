@@ -3,7 +3,12 @@ import Foundation
 @MainActor
 protocol ClipRepository: AnyObject {
     var maxItems: Int { get }
-    func insert(payload: ClipPayload, sourceBundleId: String?, thumbnailPNG: Data?) throws -> InsertOutcome
+    func insert(
+        payload: ClipPayload,
+        sourceBundleId: String?,
+        thumbnailPNG: Data?,
+        payloadDigest: Data?
+    ) throws -> InsertOutcome
     func fetchAll(limit: Int?) throws -> [ClipItem]
     func fetchOne(id: UUID) throws -> ClipItem?
     func delete(id: UUID) throws
@@ -14,7 +19,11 @@ protocol ClipRepository: AnyObject {
 
 extension ClipRepository {
     func insert(payload: ClipPayload, sourceBundleId: String?) throws -> InsertOutcome {
-        try insert(payload: payload, sourceBundleId: sourceBundleId, thumbnailPNG: nil)
+        try insert(payload: payload, sourceBundleId: sourceBundleId, thumbnailPNG: nil, payloadDigest: nil)
+    }
+
+    func insert(payload: ClipPayload, sourceBundleId: String?, thumbnailPNG: Data?) throws -> InsertOutcome {
+        try insert(payload: payload, sourceBundleId: sourceBundleId, thumbnailPNG: thumbnailPNG, payloadDigest: nil)
     }
 }
 

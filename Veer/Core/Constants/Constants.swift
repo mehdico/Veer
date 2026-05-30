@@ -14,6 +14,8 @@ enum Constants {
         static let options = [50, 100, 200, 500, 750, 1000, 1500]
         static let previewCharacterLimit = 512
         static let thumbnailEdge: CGFloat = 64
+        static let largePayloadBytes = 512 * 1024
+        static let largePayloadDigestSampleBytes = 64 * 1024
     }
 
     enum Pasteboard {

@@ -12,7 +12,7 @@ enum CellKind: String, Sendable, CaseIterable {
 
 extension ClipItemSnapshot {
     var kind: CellKind {
-        if has(.png) || has(.tiff) { return .image }
+        if typeRawValues.contains(where: { ClipPayload.imageTypeKeys.contains($0) }) { return .image }
         if has(.pdf) { return .pdf }
         if has(.color) { return .color }
         if has(.fileURL) { return .file }
