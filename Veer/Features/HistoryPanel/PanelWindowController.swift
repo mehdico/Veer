@@ -6,6 +6,7 @@ final class PanelWindowController: NSWindowController, NSWindowDelegate {
     private let env: AppEnvironment
     private let coordinator: PanelCoordinator
     private var lastSearchChromeHeight: CGFloat?
+    private var wasPanelShown = false
 
     init(env: AppEnvironment, coordinator: PanelCoordinator) {
         self.env = env
@@ -38,9 +39,13 @@ final class PanelWindowController: NSWindowController, NSWindowDelegate {
                 setWindowFrame(frame, on: window, animated: animateSearchResize)
             }
             window.orderFrontRegardless()
-            window.makeKey()
+            if !wasPanelShown {
+                window.makeKey()
+            }
+            wasPanelShown = true
         } else {
             window.orderOut(nil)
+            wasPanelShown = false
         }
         lastSearchChromeHeight = coordinator.searchChromeHeight
     }
@@ -100,11 +105,16 @@ final class PanelWindowController: NSWindowController, NSWindowDelegate {
 
     func windowDidResignKey(_ notification: Notification) {
         DispatchQueue.main.async { [weak self] in
-            guard let self, self.coordinator.isShown else { return }
-            if let nextKey = NSApp.keyWindow, nextKey !== self.window {
-                return
-            }
+            guard let self, let window = self.window, self.coordinator.isShown else { return }
+            guard Self.shouldHidePanel(afterResigningKey: NSApp.keyWindow, panel: window) else { return }
             self.coordinator.hide()
         }
+    }
+
+    private static func shouldHidePanel(afterResigningKey nextKey: NSWindow?, panel: NSWindow) -> Bool {
+        guard let nextKey else { return false }
+        if nextKey === panel { return false }
+        if nextKey is PanelWindow || nextKey is PreviewWindow { return false }
+        return true
     }
 }

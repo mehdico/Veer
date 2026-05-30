@@ -9,9 +9,10 @@ final class PanelWindow: NSPanel {
             defer: false
         )
         isFloatingPanel = true
+        becomesKeyOnlyIfNeeded = true
         level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.popUpMenuWindow)) - 1)
         hidesOnDeactivate = false
-        isMovableByWindowBackground = true
+        isMovableByWindowBackground = false
         backgroundColor = .clear
         isOpaque = false
         hasShadow = true
@@ -38,6 +39,13 @@ final class PanelWindow: NSPanel {
 
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
+
+    override func mouseDown(with event: NSEvent) {
+        if !isKeyWindow {
+            makeKey()
+        }
+        super.mouseDown(with: event)
+    }
 
     override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
         frameRect

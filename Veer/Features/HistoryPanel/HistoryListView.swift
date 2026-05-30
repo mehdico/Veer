@@ -52,6 +52,11 @@ struct HistoryListView: View {
                             )
                             .id(snapshot.id)
                             .contentShape(Rectangle())
+                            .highPriorityGesture(
+                                TapGesture(count: 2).onEnded {
+                                    Task { await viewModel.selectAndPaste(quickIndex: index) }
+                                }
+                            )
                             .onTapGesture {
                                 viewModel.selectedIndex = index
                             }
