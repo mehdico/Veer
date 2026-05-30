@@ -17,9 +17,7 @@ struct HistoryListView: View {
         .onAppear {
             focused = true
             viewModel.quickPasteBase = 0
-            viewModel.start()
         }
-        .onDisappear { viewModel.stop() }
         .onChange(of: coordinator.isShown) { _, shown in
             if shown {
                 focused = true

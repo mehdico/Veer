@@ -6,10 +6,7 @@ struct PanelSearchChrome: View {
     var body: some View {
         Group {
             if !searchText.isEmpty {
-                VStack(spacing: 0) {
-                    PanelSearchBar(text: searchText)
-                    Divider()
-                }
+                PanelSearchBar(text: searchText)
             }
         }
         .frame(height: searchText.isEmpty ? 0 : Constants.Panel.searchBarHeight)

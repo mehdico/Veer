@@ -5,7 +5,7 @@ enum Constants {
         static let width: CGFloat = 400
         static let verticalHeight: CGFloat = 420
         static let horizontalHeight: CGFloat = 220
-        static let searchBarHeight: CGFloat = 42
+        static let searchBarHeight: CGFloat = 40
     }
 
     enum History {
@@ -17,6 +17,10 @@ enum Constants {
     }
 
     enum Pasteboard {
+        static let alwaysRejectIfPresent: Set<String> = [
+            "com.agilebits.onepassword",
+            "org.nspasteboard.ConcealedType",
+        ]
         static let denylistedTypes: Set<String> = [
             "org.nspasteboard.TransientType",
             "org.nspasteboard.ConcealedType",

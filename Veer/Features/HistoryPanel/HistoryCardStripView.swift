@@ -17,9 +17,7 @@ struct HistoryCardStripView: View {
         .focused($focused)
         .onAppear {
             focused = true
-            viewModel.start()
         }
-        .onDisappear { viewModel.stop() }
         .onChange(of: coordinator.isShown) { _, shown in
             if shown {
                 focused = true

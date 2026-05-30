@@ -55,6 +55,17 @@ struct ClipRepositoryTests {
         #expect(try repo.fetchAll(limit: nil).isEmpty)
     }
 
+    @Test func transientMarkerWithTextIsStored() throws {
+        let repo = try makeRepo()
+        let payload = ClipPayload(typed: [
+            "org.nspasteboard.TransientType": Data([0x01]),
+            NSPasteboard.PasteboardType.string.rawValue: Data("visible".utf8),
+        ])
+        let outcome = try repo.insert(payload: payload, sourceBundleId: nil)
+        if case .inserted = outcome {} else { Issue.record("Expected inserted"); return }
+        #expect(try repo.fetchAll(limit: nil).first?.preview == "visible")
+    }
+
     @Test func duplicateOfMostRecentIsRejected() throws {
         let repo = try makeRepo()
         _ = try repo.insert(payload: textPayload("same"), sourceBundleId: nil)

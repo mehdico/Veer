@@ -13,13 +13,23 @@ final class PasteboardMonitor: PasteboardMonitoring {
     private var emptyRetries: Int = 0
     private var pendingChangeCount: Int?
     private var pendingStart: ContinuousClock.Instant?
-    private static let maxPendingWait: Duration = .seconds(1)
+    private var pendingSourceBundleId: String?
+    private let maxPendingWait: Duration
+    private let maxLoadingWait: Duration
     private var pollTask: Task<Void, Never>?
 
-    init(source: PasteboardSource, frontmost: FrontmostAppProviding, interval: Duration = .milliseconds(50)) {
+    init(
+        source: PasteboardSource,
+        frontmost: FrontmostAppProviding,
+        interval: Duration = .milliseconds(50),
+        maxPendingWait: Duration = .seconds(1),
+        maxLoadingWait: Duration = .seconds(5)
+    ) {
         self.source = source
         self.frontmost = frontmost
         self.interval = interval
+        self.maxPendingWait = maxPendingWait
+        self.maxLoadingWait = maxLoadingWait
         var continuation: AsyncStream<MonitorEvent>.Continuation!
         self.events = AsyncStream { continuation = $0 }
         self.continuation = continuation
@@ -32,10 +42,12 @@ final class PasteboardMonitor: PasteboardMonitoring {
 
     func start() {
         stop()
+        poll()
         pollTask = Task { @MainActor [weak self] in
             guard let self else { return }
             while !Task.isCancelled {
-                try? await Task.sleep(for: self.interval)
+                let delay = self.pendingChangeCount != nil ? Duration.milliseconds(10) : self.interval
+                try? await Task.sleep(for: delay)
                 self.poll()
             }
         }
@@ -52,15 +64,18 @@ final class PasteboardMonitor: PasteboardMonitoring {
         if pendingChangeCount != count {
             pendingChangeCount = count
             pendingStart = ContinuousClock().now
+            pendingSourceBundleId = frontmost.currentBundleId()
             emptyRetries = 0
         }
         let snapshots = source.snapshot()
         let nonEmpty = snapshots.filter { !$0.typed.isEmpty }
         if nonEmpty.isEmpty {
+            let hasItems = !snapshots.isEmpty
+            let maxWait = hasItems ? maxLoadingWait : maxPendingWait
             let isTimedOut: Bool
             if let pendingStart {
                 let now = ContinuousClock().now
-                isTimedOut = pendingStart.duration(to: now) >= Self.maxPendingWait
+                isTimedOut = pendingStart.duration(to: now) >= maxWait
             } else {
                 isTimedOut = false
             }
@@ -70,6 +85,7 @@ final class PasteboardMonitor: PasteboardMonitoring {
                 lastChangeCount = count
                 pendingChangeCount = nil
                 pendingStart = nil
+                pendingSourceBundleId = nil
                 emptyRetries = 0
             }
             return
@@ -78,7 +94,8 @@ final class PasteboardMonitor: PasteboardMonitoring {
         emptyRetries = 0
         pendingChangeCount = nil
         pendingStart = nil
-        let bundle = frontmost.currentBundleId()
+        let bundle = pendingSourceBundleId ?? frontmost.currentBundleId()
+        pendingSourceBundleId = nil
         for snapshot in nonEmpty {
             let typeList = snapshot.typed.keys.sorted().joined(separator: ",")
             let totalBytes = snapshot.typed.values.reduce(0) { $0 + $1.count }
@@ -96,6 +113,7 @@ final class PasteboardMonitor: PasteboardMonitoring {
         if pendingChangeCount == changeCount {
             pendingChangeCount = nil
             pendingStart = nil
+            pendingSourceBundleId = nil
         }
     }
 }

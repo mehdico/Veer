@@ -23,6 +23,9 @@ struct HistoryRootView: View {
             if shown {
                 env.historyViewModel.resetForShow()
                 coordinator.syncSearchChromeHeight(isSearching: false)
+                env.historyViewModel.start()
+            } else {
+                env.historyViewModel.stop()
             }
         }
         .onChange(of: env.historyViewModel.searchText.isEmpty) { _, isEmpty in
@@ -33,6 +36,9 @@ struct HistoryRootView: View {
         .blur(radius: isVisible ? 0 : 10)
         .onAppear {
             coordinator.syncSearchChromeHeight(isSearching: !env.historyViewModel.searchText.isEmpty)
+            if coordinator.isShown {
+                env.historyViewModel.start()
+            }
             withAnimation(.spring(response: 0.4, dampingFraction: 0.7, blendDuration: 0)) {
                 isVisible = true
             }

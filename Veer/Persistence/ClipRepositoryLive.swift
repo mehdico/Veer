@@ -10,8 +10,8 @@ final class ClipRepositoryLive: ClipRepository {
         AsyncStream { continuation in
             let id = UUID()
             changeContinuations[id] = continuation
-            continuation.onTermination = { @Sendable [weak self] _ in
-                Task { @MainActor in
+            continuation.onTermination = { @Sendable [id] _ in
+                Task { @MainActor [weak self] in
                     self?.changeContinuations.removeValue(forKey: id)
                 }
             }

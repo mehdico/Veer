@@ -15,10 +15,12 @@ final class LivePasteboardWriter: PasteboardWriting {
     }
 
     func write(typed: [String: Data]) {
-        pasteboard.clearContents()
+        let item = NSPasteboardItem()
         for (type, data) in typed {
-            pasteboard.setData(data, forType: NSPasteboard.PasteboardType(rawValue: type))
+            item.setData(data, forType: NSPasteboard.PasteboardType(rawValue: type))
         }
+        pasteboard.clearContents()
+        pasteboard.writeObjects([item])
         onWrite?(pasteboard.changeCount)
     }
 }

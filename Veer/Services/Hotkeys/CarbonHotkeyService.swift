@@ -1,17 +1,17 @@
 import Carbon.HIToolbox
 import Foundation
 
+private struct CarbonHotkeyRegistration {
+    let id: UInt32
+    let ref: EventHotKeyRef
+    let handler: () -> Void
+}
+
 @MainActor
 final class CarbonHotkeyService: HotkeyService {
     private static let signature: OSType = 0x56454552 // 'VEER'
 
-    private struct Registration {
-        let id: UInt32
-        let ref: EventHotKeyRef
-        let handler: () -> Void
-    }
-
-    nonisolated(unsafe) private var registrations: [HotkeyShortcut: Registration] = [:]
+    nonisolated(unsafe) private var registrations: [HotkeyShortcut: CarbonHotkeyRegistration] = [:]
     nonisolated(unsafe) private var nextID: UInt32 = 1
     nonisolated(unsafe) private var eventHandler: EventHandlerRef?
     private let logger = VeerLogger(category: .hotkeys)
@@ -56,7 +56,7 @@ final class CarbonHotkeyService: HotkeyService {
             logger.warning("Failed to register hotkey \(shortcut.rawValue) (status \(status)). Accessibility permission may be missing.")
             return
         }
-        registrations[shortcut] = Registration(id: id, ref: ref, handler: handler)
+        registrations[shortcut] = CarbonHotkeyRegistration(id: id, ref: ref, handler: handler)
         Self.dispatchTable[id] = handler
     }
 

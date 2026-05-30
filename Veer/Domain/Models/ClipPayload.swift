@@ -14,7 +14,12 @@ struct ClipPayload: Sendable, Equatable {
     var isEmpty: Bool { typed.isEmpty }
 
     var hasDenyListedType: Bool {
-        !Constants.Pasteboard.denylistedTypes.isDisjoint(with: typed.keys)
+        let keys = Set(typed.keys)
+        if !keys.isDisjoint(with: Constants.Pasteboard.alwaysRejectIfPresent) {
+            return true
+        }
+        let contentKeys = keys.subtracting(Constants.Pasteboard.denylistedTypes)
+        return contentKeys.isEmpty && !keys.isDisjoint(with: Constants.Pasteboard.denylistedTypes)
     }
 
     func digest() -> Data {
@@ -27,10 +32,10 @@ struct ClipPayload: Sendable, Equatable {
     }
 
     func plainTextPreview(limit: Int = Constants.History.previewCharacterLimit) -> String? {
-        if let data = typed[NSPasteboard.PasteboardType.string.rawValue],
-           let text = String(data: data, encoding: .utf8)
-        {
-            return Self.truncate(text, limit: limit)
+        for type in Self.plainTextTypeCandidates {
+            if let data = typed[type], let text = String(data: data, encoding: .utf8) {
+                return Self.truncate(text, limit: limit)
+            }
         }
         if let data = typed[NSPasteboard.PasteboardType.rtf.rawValue],
            let attr = try? NSAttributedString(data: data, options: [:], documentAttributes: nil)
@@ -76,6 +81,12 @@ struct ClipPayload: Sendable, Equatable {
         guard CGImageDestinationFinalize(dest) else { return nil }
         return out as Data
     }
+
+    private static let plainTextTypeCandidates = [
+        NSPasteboard.PasteboardType.string.rawValue,
+        "NSStringPboardType",
+        "public.utf8-plain-text",
+    ]
 
     private static func truncate(_ s: String, limit: Int) -> String {
         s.count <= limit ? s : String(s.prefix(limit))

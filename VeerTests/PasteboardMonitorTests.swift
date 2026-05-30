@@ -8,7 +8,13 @@ struct PasteboardMonitorTests {
     private func makeMonitor() -> (PasteboardMonitor, MockPasteboardSource, MockFrontmostAppProvider) {
         let source = MockPasteboardSource()
         let frontmost = MockFrontmostAppProvider()
-        let monitor = PasteboardMonitor(source: source, frontmost: frontmost, interval: .milliseconds(1))
+        let monitor = PasteboardMonitor(
+            source: source,
+            frontmost: frontmost,
+            interval: .milliseconds(1),
+            maxPendingWait: .milliseconds(1),
+            maxLoadingWait: .milliseconds(1)
+        )
         return (monitor, source, frontmost)
     }
 
@@ -38,7 +44,13 @@ struct PasteboardMonitorTests {
     @Test func pollSkipsEmptySnapshots() {
         let source = MockPasteboardSource()
         let frontmost = MockFrontmostAppProvider()
-        let monitor = PasteboardMonitor(source: source, frontmost: frontmost, interval: .milliseconds(1))
+        let monitor = PasteboardMonitor(
+            source: source,
+            frontmost: frontmost,
+            interval: .milliseconds(1),
+            maxPendingWait: .milliseconds(1),
+            maxLoadingWait: .milliseconds(1)
+        )
 
         source.changeCount = 99
         source.snapshots = [PasteboardItemSnapshot(typed: [:])]
@@ -52,7 +64,13 @@ struct PasteboardMonitorTests {
         // a few polls later. Veer must retry rather than advance lastChangeCount past the clip.
         let source = MockPasteboardSource()
         let frontmost = MockFrontmostAppProvider()
-        let monitor = PasteboardMonitor(source: source, frontmost: frontmost, interval: .milliseconds(1))
+        let monitor = PasteboardMonitor(
+            source: source,
+            frontmost: frontmost,
+            interval: .milliseconds(1),
+            maxPendingWait: .milliseconds(1),
+            maxLoadingWait: .milliseconds(1)
+        )
 
         source.changeCount = 42
         source.snapshots = [PasteboardItemSnapshot(typed: [:])]
@@ -70,7 +88,13 @@ struct PasteboardMonitorTests {
     @Test func emptySnapshotRetriesAreBoundedAndAdvanceEventually() {
         let source = MockPasteboardSource()
         let frontmost = MockFrontmostAppProvider()
-        let monitor = PasteboardMonitor(source: source, frontmost: frontmost, interval: .milliseconds(1))
+        let monitor = PasteboardMonitor(
+            source: source,
+            frontmost: frontmost,
+            interval: .milliseconds(1),
+            maxPendingWait: .milliseconds(1),
+            maxLoadingWait: .milliseconds(1)
+        )
 
         source.changeCount = 1
         source.snapshots = [PasteboardItemSnapshot(typed: [:])]
@@ -87,7 +111,13 @@ struct PasteboardMonitorTests {
     @Test func emitsEventPerSnapshotItem() async throws {
         let source = MockPasteboardSource()
         let frontmost = MockFrontmostAppProvider()
-        let monitor = PasteboardMonitor(source: source, frontmost: frontmost, interval: .milliseconds(1))
+        let monitor = PasteboardMonitor(
+            source: source,
+            frontmost: frontmost,
+            interval: .milliseconds(1),
+            maxPendingWait: .milliseconds(1),
+            maxLoadingWait: .milliseconds(1)
+        )
 
         source.changeCount = 1
         source.snapshots = [
@@ -118,7 +148,13 @@ struct PasteboardMonitorTests {
     @Test func acknowledgeAllowsLaterUserChange() async throws {
         let source = MockPasteboardSource()
         let frontmost = MockFrontmostAppProvider()
-        let monitor = PasteboardMonitor(source: source, frontmost: frontmost, interval: .milliseconds(1))
+        let monitor = PasteboardMonitor(
+            source: source,
+            frontmost: frontmost,
+            interval: .milliseconds(1),
+            maxPendingWait: .milliseconds(1),
+            maxLoadingWait: .milliseconds(1)
+        )
         source.changeCount = 7
         monitor.acknowledge(changeCount: 7)
 
@@ -128,6 +164,31 @@ struct PasteboardMonitorTests {
         monitor.poll()
         let event = await iterator.next()
         #expect(event?.payload.typed[NSPasteboard.PasteboardType.string.rawValue] == Data("user".utf8))
+    }
+
+    @Test func pollUsesFrontmostAppFromWhenChangeWasDetected() async throws {
+        let source = MockPasteboardSource()
+        let frontmost = MockFrontmostAppProvider()
+        let monitor = PasteboardMonitor(
+            source: source,
+            frontmost: frontmost,
+            interval: .milliseconds(1),
+            maxPendingWait: .milliseconds(1),
+            maxLoadingWait: .milliseconds(1)
+        )
+
+        frontmost.bundleId = "com.copier"
+        source.changeCount = 10
+        source.snapshots = [PasteboardItemSnapshot(typed: [:])]
+        monitor.poll()
+
+        frontmost.bundleId = "com.other"
+        source.snapshots = [PasteboardItemSnapshot(typed: [NSPasteboard.PasteboardType.string.rawValue: Data("x".utf8)])]
+        var iterator = monitor.events.makeAsyncIterator()
+        monitor.poll()
+
+        let event = await iterator.next()
+        #expect(event?.sourceBundleId == "com.copier")
     }
 
     @Test func startKicksOffPollingLoop() async throws {
