@@ -7,6 +7,8 @@ final class PanelWindowController: NSWindowController, NSWindowDelegate {
     private let coordinator: PanelCoordinator
     private var lastSearchChromeHeight: CGFloat?
     private var wasPanelShown = false
+    private var outsideClickMonitor: Any?
+    private var workspaceObserver: NSObjectProtocol?
 
     init(env: AppEnvironment, coordinator: PanelCoordinator) {
         self.env = env
@@ -48,6 +50,49 @@ final class PanelWindowController: NSWindowController, NSWindowDelegate {
             wasPanelShown = false
         }
         lastSearchChromeHeight = coordinator.searchChromeHeight
+        setOutsideClickMonitor(enabled: coordinator.isShown)
+    }
+
+    private func setOutsideClickMonitor(enabled: Bool) {
+        if let outsideClickMonitor {
+            NSEvent.removeMonitor(outsideClickMonitor)
+            self.outsideClickMonitor = nil
+        }
+        if let workspaceObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(workspaceObserver)
+            self.workspaceObserver = nil
+        }
+        guard enabled else { return }
+        outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown) { [weak self] _ in
+            Task { @MainActor in
+                self?.handleOutsideClick()
+            }
+        }
+        workspaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let self, self.coordinator.isShown else { return }
+            guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else { return }
+            if app.bundleIdentifier == Bundle.main.bundleIdentifier { return }
+            self.coordinator.hide()
+        }
+    }
+
+    private func handleOutsideClick() {
+        guard coordinator.isShown, let window else { return }
+        let point = NSEvent.mouseLocation
+        if Self.pointHitsVisibleVeerPanel(point) { return }
+        coordinator.hide()
+    }
+
+    private static func pointHitsVisibleVeerPanel(_ point: NSPoint) -> Bool {
+        NSApp.windows.contains { window in
+            window.isVisible
+                && (window is PanelWindow || window is PreviewWindow)
+                && window.frame.contains(point)
+        }
     }
 
     private func shouldAnimateSearchChromeResize() -> Bool {
@@ -106,15 +151,15 @@ final class PanelWindowController: NSWindowController, NSWindowDelegate {
     func windowDidResignKey(_ notification: Notification) {
         DispatchQueue.main.async { [weak self] in
             guard let self, let window = self.window, self.coordinator.isShown else { return }
-            guard Self.shouldHidePanel(afterResigningKey: NSApp.keyWindow, panel: window) else { return }
+            guard Self.shouldHidePanelAfterResignKey(panel: window, keyWindow: NSApp.keyWindow) else { return }
             self.coordinator.hide()
         }
     }
 
-    private static func shouldHidePanel(afterResigningKey nextKey: NSWindow?, panel: NSWindow) -> Bool {
-        guard let nextKey else { return false }
-        if nextKey === panel { return false }
-        if nextKey is PanelWindow || nextKey is PreviewWindow { return false }
+    static func shouldHidePanelAfterResignKey(panel: NSWindow, keyWindow: NSWindow?) -> Bool {
+        if panel.isKeyWindow { return false }
+        guard let keyWindow else { return true }
+        if keyWindow is PreviewWindow { return false }
         return true
     }
 }

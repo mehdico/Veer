@@ -35,7 +35,6 @@ private struct CardChrome<Content: View>: View {
         .shadow(color: isSelected ? Color.accentColor.opacity(0.4) : Color.black.opacity(0.1), radius: isSelected ? 12 : 4)
         .scaleEffect(isSelected ? 1.02 : 1.0)
         .accessibilityIdentifier(identifier)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
     }
 
     @ViewBuilder

@@ -22,6 +22,5 @@ struct CellChrome<Content: View>: View {
             .clipShape(RoundedRectangle(cornerRadius: 8))
             .shadow(color: isSelected ? Color.accentColor.opacity(0.3) : Color.clear, radius: 8, x: 0, y: 0)
             .accessibilityIdentifier(identifier)
-            .animation(.spring(response: 0.2, dampingFraction: 0.8), value: isSelected)
     }
 }

@@ -128,26 +128,23 @@ struct HistoryCardStripView: View {
     @ViewBuilder
     private func cardCell(index: Int, snapshot: ClipItemSnapshot, side: CGFloat) -> some View {
         let shortcut = index - viewModel.quickPasteBase
-        clipCardView(
-            snapshot: snapshot,
-            isSelected: index == viewModel.selectedIndex,
-            viewModel: viewModel
-        )
-        .frame(width: side, height: side)
-        .overlay(alignment: .topTrailing) {
-            if (0...9).contains(shortcut) {
-                shortcutBadge(shortcut)
+        ClipRowInteraction(
+            index: index,
+            onSelect: { viewModel.selectedIndex = index },
+            onDoublePaste: { Task { await viewModel.selectAndPaste(quickIndex: index) } }
+        ) {
+            clipCardView(
+                snapshot: snapshot,
+                isSelected: index == viewModel.selectedIndex,
+                viewModel: viewModel
+            )
+            .frame(width: side, height: side)
+            .overlay(alignment: .topTrailing) {
+                if (0...9).contains(shortcut) {
+                    shortcutBadge(shortcut)
+                }
             }
-        }
-        .id(snapshot.id)
-        .contentShape(Rectangle())
-        .highPriorityGesture(
-            TapGesture(count: 2).onEnded {
-                Task { await viewModel.selectAndPaste(quickIndex: index) }
-            }
-        )
-        .onTapGesture {
-            viewModel.selectedIndex = index
+            .id(snapshot.id)
         }
     }
 

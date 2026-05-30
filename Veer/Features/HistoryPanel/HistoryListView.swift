@@ -39,26 +39,23 @@ struct HistoryListView: View {
                             .padding(.vertical, 24)
                     } else {
                         ForEach(Array(items.enumerated()), id: \.element.id) { index, snapshot in
-                            clipCellView(
-                                snapshot: snapshot,
-                                isSelected: index == viewModel.selectedIndex,
-                                viewModel: viewModel
-                            )
-                            .transition(
-                                .asymmetric(
-                                    insertion: .opacity.combined(with: .scale(scale: 0.98)).combined(with: .offset(y: 4)),
-                                    removal: .opacity.combined(with: .scale(scale: 0.98))
+                            ClipRowInteraction(
+                                index: index,
+                                onSelect: { viewModel.selectedIndex = index },
+                                onDoublePaste: { Task { await viewModel.selectAndPaste(quickIndex: index) } }
+                            ) {
+                                clipCellView(
+                                    snapshot: snapshot,
+                                    isSelected: index == viewModel.selectedIndex,
+                                    viewModel: viewModel
                                 )
-                            )
-                            .id(snapshot.id)
-                            .contentShape(Rectangle())
-                            .highPriorityGesture(
-                                TapGesture(count: 2).onEnded {
-                                    Task { await viewModel.selectAndPaste(quickIndex: index) }
-                                }
-                            )
-                            .onTapGesture {
-                                viewModel.selectedIndex = index
+                                .transition(
+                                    .asymmetric(
+                                        insertion: .opacity.combined(with: .scale(scale: 0.98)).combined(with: .offset(y: 4)),
+                                        removal: .opacity.combined(with: .scale(scale: 0.98))
+                                    )
+                                )
+                                .id(snapshot.id)
                             }
                         }
                     }
@@ -71,7 +68,11 @@ struct HistoryListView: View {
             .onChange(of: viewModel.selectedIndex) { _, newIndex in
                 let items = viewModel.filteredItems
                 guard items.indices.contains(newIndex) else { return }
-                proxy.scrollTo(items[newIndex].id, anchor: .center)
+                var transaction = Transaction()
+                transaction.disablesAnimations = true
+                withTransaction(transaction) {
+                    proxy.scrollTo(items[newIndex].id, anchor: .center)
+                }
             }
             .onChange(of: viewModel.searchText) { _, newValue in
                 if let firstID = viewModel.filteredItems.first?.id {
