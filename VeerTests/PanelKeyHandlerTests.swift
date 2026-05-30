@@ -20,4 +20,17 @@ struct PanelKeyHandlerTests {
             #expect(PanelKeyHandler.isPrintable(ch) == true, "Expected printable: \(ch)")
         }
     }
+
+    @Test func navigationRepeatIntervalStartsSlowThenAccelerates() {
+        #expect(PanelNavigationRepeatGate.repeatInterval(afterRepeatCount: 0) == .milliseconds(150))
+        #expect(PanelNavigationRepeatGate.repeatInterval(afterRepeatCount: 2) == .milliseconds(150))
+        #expect(PanelNavigationRepeatGate.repeatInterval(afterRepeatCount: 3) == .milliseconds(100))
+        #expect(PanelNavigationRepeatGate.repeatInterval(afterRepeatCount: 11) == .milliseconds(100))
+        #expect(PanelNavigationRepeatGate.repeatInterval(afterRepeatCount: 12) == .milliseconds(65))
+    }
+
+    @Test func navigationRepeatGateAcceptsFirstPressImmediately() {
+        var gate = PanelNavigationRepeatGate()
+        #expect(gate.shouldAccept(phase: [.down], direction: .down) == true)
+    }
 }

@@ -1,7 +1,50 @@
 import SwiftUI
 
 @MainActor
+struct PanelNavigationRepeatGate {
+    private var lastAccepted: ContinuousClock.Instant?
+    private var repeatCount = 0
+    private var lastDirection: Direction?
+
+    enum Direction {
+        case up, down
+    }
+
+    static func repeatInterval(afterRepeatCount count: Int) -> Duration {
+        if count < 3 { return .milliseconds(150) }
+        if count < 12 { return .milliseconds(100) }
+        return .milliseconds(65)
+    }
+
+    mutating func shouldAccept(phase: KeyPress.Phases, direction: Direction) -> Bool {
+        if !phase.contains(.repeat) {
+            if phase.contains(.down) {
+                lastDirection = direction
+                repeatCount = 0
+                lastAccepted = ContinuousClock.now
+            }
+            return true
+        }
+        if lastDirection != direction {
+            lastDirection = direction
+            repeatCount = 0
+            lastAccepted = nil
+        }
+        let now = ContinuousClock.now
+        let interval = Self.repeatInterval(afterRepeatCount: repeatCount)
+        if let last = lastAccepted, now - last < interval {
+            return false
+        }
+        lastAccepted = now
+        repeatCount += 1
+        return true
+    }
+}
+
+@MainActor
 enum PanelKeyHandler {
+    private static var navigationRepeatGate = PanelNavigationRepeatGate()
+
     static func handle(_ press: KeyPress, viewModel: HistoryListViewModel) -> KeyPress.Result {
         let key = press.key
         let mods = press.modifiers
@@ -16,10 +59,14 @@ enum PanelKeyHandler {
 
         switch key {
         case .upArrow, .leftArrow:
-            viewModel.navigateUp()
+            if navigationRepeatGate.shouldAccept(phase: press.phase, direction: .up) {
+                viewModel.navigateUp()
+            }
             return .handled
         case .downArrow, .rightArrow:
-            viewModel.navigateDown()
+            if navigationRepeatGate.shouldAccept(phase: press.phase, direction: .down) {
+                viewModel.navigateDown()
+            }
             return .handled
         case .pageUp:
             viewModel.navigateUp(by: 10)
