@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HistoryListView: View {
     @Bindable var viewModel: HistoryListViewModel
+    @Bindable var coordinator: PanelCoordinator
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -23,10 +24,9 @@ struct HistoryListView: View {
             viewModel.start()
         }
         .onDisappear { viewModel.stop() }
-        .onChange(of: viewModel.panel.isShown) { _, shown in
+        .onChange(of: coordinator.isShown) { _, shown in
             if shown {
                 focused = true
-                viewModel.resetForShow()
             }
         }
         .onKeyPress(phases: [.down, .repeat]) { press in
@@ -108,7 +108,7 @@ struct HistoryListView: View {
                     }
                 }
             }
-            .onChange(of: viewModel.panel.isShown) { _, shown in
+            .onChange(of: coordinator.isShown) { _, shown in
                 if shown, let firstID = viewModel.filteredItems.first?.id {
                     proxy.scrollTo(firstID, anchor: .top)
                 }

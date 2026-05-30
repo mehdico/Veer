@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HistoryCardStripView: View {
     @Bindable var viewModel: HistoryListViewModel
+    @Bindable var coordinator: PanelCoordinator
     @FocusState private var focused: Bool
     @State private var firstVisibleID: UUID?
 
@@ -22,10 +23,9 @@ struct HistoryCardStripView: View {
             viewModel.start()
         }
         .onDisappear { viewModel.stop() }
-        .onChange(of: viewModel.panel.isShown) { _, shown in
+        .onChange(of: coordinator.isShown) { _, shown in
             if shown {
                 focused = true
-                viewModel.resetForShow()
                 firstVisibleID = viewModel.filteredItems.first?.id
             }
         }

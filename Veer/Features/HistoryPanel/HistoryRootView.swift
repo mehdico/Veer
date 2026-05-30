@@ -14,9 +14,14 @@ struct HistoryRootView: View {
     var body: some View {
         Group {
             if coordinator.effectiveHorizontal {
-                HistoryCardStripView(viewModel: env.historyViewModel)
+                HistoryCardStripView(viewModel: env.historyViewModel, coordinator: coordinator)
             } else {
-                HistoryListView(viewModel: env.historyViewModel)
+                HistoryListView(viewModel: env.historyViewModel, coordinator: coordinator)
+            }
+        }
+        .onChange(of: coordinator.isShown) { _, shown in
+            if shown {
+                env.historyViewModel.resetForShow()
             }
         }
         .opacity(isVisible ? 1 : 0)
