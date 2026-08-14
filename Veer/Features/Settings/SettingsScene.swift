@@ -8,6 +8,9 @@ struct SettingsScene: View {
             GeneralTab(env: env)
                 .tabItem { Label("General", systemImage: "gear") }
                 .accessibilityIdentifier("settingsGeneralTab")
+            IgnoredAppsTab(env: env)
+                .tabItem { Label("Ignored Apps", systemImage: "eye.slash") }
+                .accessibilityIdentifier("settingsIgnoredAppsTab")
             HotkeysTab(env: env)
                 .tabItem { Label("Shortcuts", systemImage: "keyboard") }
                 .accessibilityIdentifier("settingsHotkeysTab")
