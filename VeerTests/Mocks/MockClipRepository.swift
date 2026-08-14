@@ -48,6 +48,13 @@ final class MockClipRepository: ClipRepository {
 
     func fetchOne(id: UUID) throws -> ClipItem? { nil }
 
+    private(set) var movedToFrontIds: [UUID] = []
+
+    func moveToFront(id: UUID) throws {
+        movedToFrontIds.append(id)
+        for (_, c) in changeContinuations { c.yield(()) }
+    }
+
     func delete(id: UUID) throws {
         deletedIds.append(id)
         for (_, c) in changeContinuations { c.yield(()) }

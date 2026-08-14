@@ -85,6 +85,28 @@ struct HistoryListViewModelTests {
         #expect(paster.pasteCount == 1)
     }
 
+    @Test func pasteSelectedMovesItemToFrontOfQueue() async throws {
+        let (vm, repo, _, _, _) = try await makeViewModel(seedCount: 3)
+        vm.selectedIndex = 2
+
+        await vm.pasteSelected()
+
+        #expect(try repo.fetchAll(limit: nil).map(\.preview) == ["item-0", "item-2", "item-1"])
+        vm.refresh()
+        #expect(vm.items.map(\.preview) == ["item-0", "item-2", "item-1"])
+        #expect(vm.selectedIndex == 0)
+    }
+
+    @Test func selectAndPasteMovesItemToFrontOfQueue() async throws {
+        let (vm, repo, _, _, _) = try await makeViewModel(seedCount: 5)
+
+        await vm.selectAndPaste(quickIndex: 3)
+
+        #expect(try repo.fetchAll(limit: nil).map(\.preview) == ["item-1", "item-4", "item-3", "item-2", "item-0"])
+        vm.refresh()
+        #expect(vm.items.first?.preview == "item-1")
+    }
+
     @Test func selectAndPasteHonorsQuickIndex() async throws {
         let (vm, _, paster, writer, _) = try await makeViewModel(seedCount: 5)
         await vm.selectAndPaste(quickIndex: 3)

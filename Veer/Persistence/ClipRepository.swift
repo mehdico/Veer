@@ -11,6 +11,7 @@ protocol ClipRepository: AnyObject {
     ) throws -> InsertOutcome
     func fetchAll(limit: Int?) throws -> [ClipItem]
     func fetchOne(id: UUID) throws -> ClipItem?
+    func moveToFront(id: UUID) throws
     func delete(id: UUID) throws
     func clear() throws
     func setMaxItems(_ n: Int) throws

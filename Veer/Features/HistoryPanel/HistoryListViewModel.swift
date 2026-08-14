@@ -195,6 +195,7 @@ final class HistoryListViewModel {
 
     private func paste(_ snapshot: ClipItemSnapshot) async {
         guard let item = try? repository.fetchOne(id: snapshot.id) else { return }
+        try? repository.moveToFront(id: item.id)
         let typed = Self.pasteboardPayload(for: item.blobs, pastesRichText: settings?.pastesRichText ?? true)
         pasteboardWriter.write(typed: typed)
         panel.hide()

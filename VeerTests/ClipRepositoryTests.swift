@@ -83,6 +83,38 @@ struct ClipRepositoryTests {
         #expect(try repo.fetchAll(limit: nil).count == 3)
     }
 
+    @Test func moveToFrontBringsItemToFirstPosition() async throws {
+        let repo = try makeRepo()
+        var ids: [UUID] = []
+        for i in 0..<3 {
+            guard case let .inserted(id) = try repo.insert(payload: textPayload("item-\(i)"), sourceBundleId: nil) else {
+                Issue.record("Insert failed"); return
+            }
+            ids.append(id)
+            try await Task.sleep(nanoseconds: 1_000_000)
+        }
+        #expect(try repo.fetchAll(limit: nil).map(\.preview) == ["item-2", "item-1", "item-0"])
+
+        try repo.moveToFront(id: ids[0])
+
+        let items = try repo.fetchAll(limit: nil)
+        #expect(items.map(\.preview) == ["item-0", "item-2", "item-1"])
+        #expect(items.first?.id == ids[0])
+    }
+
+    @Test func moveToFrontEmitsChange() async throws {
+        let repo = try makeRepo()
+        guard case let .inserted(id) = try repo.insert(payload: textPayload("a"), sourceBundleId: nil) else {
+            Issue.record("Insert failed"); return
+        }
+        var iterator = repo.changes.makeAsyncIterator()
+        _ = await iterator.next() // consume insert notification
+
+        try repo.moveToFront(id: id)
+        let change: Void? = await iterator.next()
+        #expect(change != nil)
+    }
+
     @Test func capEvictsOldestOnInsert() async throws {
         let repo = try makeRepo(maxItems: 3)
         for i in 0..<5 {

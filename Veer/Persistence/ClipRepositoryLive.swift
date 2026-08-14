@@ -84,6 +84,14 @@ final class ClipRepositoryLive: ClipRepository {
         return try context.fetch(descriptor).first
     }
 
+    func moveToFront(id: UUID) throws {
+        let descriptor = FetchDescriptor<ClipItem>(predicate: #Predicate { $0.id == id })
+        guard let item = try context.fetch(descriptor).first else { return }
+        item.createdAt = Date()
+        try context.save()
+        notify()
+    }
+
     func delete(id: UUID) throws {
         let descriptor = FetchDescriptor<ClipItem>(predicate: #Predicate { $0.id == id })
         if let item = try context.fetch(descriptor).first {
