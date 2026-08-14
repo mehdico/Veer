@@ -102,9 +102,9 @@ final class PanelWindowController: NSWindowController, NSWindowDelegate {
 
     private func panelFrame(for screen: NSScreen) -> NSRect {
         let base = coordinator.position.baseForSizing
-        let contentOverride = env.settings.panelSize(for: base.rawValue).map {
-            NSSize(width: $0.width, height: $0.height)
-        }
+        let contentOverride = env.settings
+            .panelSize(for: base.rawValue, matchingScreenSize: screen.frame.size)
+            .map { NSSize(width: $0.width, height: $0.height) }
         var frame = coordinator.position.frame(
             for: screen,
             horizontal: coordinator.horizontal,
@@ -131,7 +131,9 @@ final class PanelWindowController: NSWindowController, NSWindowDelegate {
         let base = coordinator.position.baseForSizing
         var size = window.frame.size
         size.height = max(0, size.height - coordinator.searchChromeHeight)
-        env.settings.setPanelSize(size, for: base.rawValue)
+        if let screenSize = window.screen?.frame.size ?? coordinator.currentScreen()?.frame.size {
+            env.settings.setPanelSize(size, for: base.rawValue, onScreenOfSize: screenSize)
+        }
 
         if coordinator.position.isCentered, let screen = window.screen ?? coordinator.currentScreen() {
             let chrome = coordinator.searchChromeHeight

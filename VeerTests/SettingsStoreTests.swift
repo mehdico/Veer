@@ -25,24 +25,40 @@ struct SettingsStoreTests {
         first.showsRichText = false
         first.pastesRichText = false
         first.showAsCards = false
-        first.setPanelSize(CGSize(width: 123, height: 456), for: 3)
+        first.setPanelSize(CGSize(width: 123, height: 456), for: 3, onScreenOfSize: CGSize(width: 1440, height: 900))
 
         let second = SettingsStore(defaults: defaults)
         #expect(second.maxHistoryItems == 200)
         #expect(second.showsRichText == false)
         #expect(second.pastesRichText == false)
         #expect(second.showAsCards == false)
-        #expect(second.panelSize(for: 3) == CGSize(width: 123, height: 456))
+        #expect(second.panelSize(for: 3, matchingScreenSize: CGSize(width: 1440, height: 900)) == CGSize(width: 123, height: 456))
     }
 
     @Test func snapshotMatchesCurrentValues() {
         let store = SettingsStore(defaults: makeDefaults())
         store.maxHistoryItems = 750
-        store.setPanelSize(CGSize(width: 111, height: 222), for: PanelPosition.bottom.rawValue)
+        store.setPanelSize(CGSize(width: 111, height: 222), for: PanelPosition.bottom.rawValue, onScreenOfSize: CGSize(width: 1512, height: 982))
         let snap = store.snapshot
         #expect(snap.maxHistoryItems == 750)
         #expect(snap.showsRichText == true)
-        #expect(snap.panelSizeByPosition[PanelPosition.bottom.rawValue] == PanelSize(width: 111, height: 222))
+        #expect(snap.panelSizeByPosition[PanelPosition.bottom.rawValue] == PanelSize(width: 111, height: 222, screenWidth: 1512, screenHeight: 982))
+    }
+
+    @Test func panelSizeIsHonoredOnMatchingScreenAndIgnoredOnDifferentScreen() {
+        let store = SettingsStore(defaults: makeDefaults())
+        store.setPanelSize(CGSize(width: 1512, height: 220), for: PanelPosition.bottom.rawValue, onScreenOfSize: CGSize(width: 1512, height: 982))
+        #expect(store.panelSize(for: PanelPosition.bottom.rawValue, matchingScreenSize: CGSize(width: 1512, height: 982)) == CGSize(width: 1512, height: 220))
+        #expect(store.panelSize(for: PanelPosition.bottom.rawValue, matchingScreenSize: CGSize(width: 1800, height: 1169)) == nil)
+    }
+
+    @Test func legacyPanelSizeWithoutScreenInfoIsIgnored() {
+        let defaults = makeDefaults()
+        var settings = VeerSettings()
+        settings.panelSizeByPosition = [PanelPosition.bottom.rawValue: PanelSize(width: 1512, height: 220)]
+        defaults.set(try! JSONEncoder().encode(settings), forKey: SettingsStore.userDefaultsKey)
+        let store = SettingsStore(defaults: defaults)
+        #expect(store.panelSize(for: PanelPosition.bottom.rawValue, matchingScreenSize: CGSize(width: 1512, height: 982)) == nil)
     }
 
     @Test func corruptStoredDataFallsBackToDefaults() {

@@ -11,4 +11,6 @@ struct VeerSettings: Codable, Sendable, Equatable {
 struct PanelSize: Codable, Sendable, Equatable {
     var width: Double
     var height: Double
+    var screenWidth: Double?
+    var screenHeight: Double?
 }

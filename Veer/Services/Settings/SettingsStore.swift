@@ -34,14 +34,24 @@ final class SettingsStore {
         )
     }
 
-    func panelSize(for positionRawValue: Int) -> CGSize? {
+    func panelSize(for positionRawValue: Int, matchingScreenSize screenSize: CGSize) -> CGSize? {
         guard let stored = panelSizeByPosition[positionRawValue] else { return nil }
+        guard let savedWidth = stored.screenWidth,
+              let savedHeight = stored.screenHeight,
+              abs(savedWidth - screenSize.width) < 0.5,
+              abs(savedHeight - screenSize.height) < 0.5
+        else { return nil }
         return CGSize(width: stored.width, height: stored.height)
     }
 
-    func setPanelSize(_ size: CGSize, for positionRawValue: Int) {
+    func setPanelSize(_ size: CGSize, for positionRawValue: Int, onScreenOfSize screenSize: CGSize) {
         var next = panelSizeByPosition
-        next[positionRawValue] = PanelSize(width: size.width, height: size.height)
+        next[positionRawValue] = PanelSize(
+            width: size.width,
+            height: size.height,
+            screenWidth: screenSize.width,
+            screenHeight: screenSize.height
+        )
         panelSizeByPosition = next
     }
 
