@@ -51,6 +51,10 @@ enum PanelKeyHandler {
         let chars = press.characters
 
         if isBackspace(press) {
+            if mods.contains(.command), !press.phase.contains(.repeat) {
+                viewModel.deleteSelected()
+                return .handled
+            }
             if !viewModel.searchText.isEmpty {
                 viewModel.searchText = String(viewModel.searchText.dropLast())
             }

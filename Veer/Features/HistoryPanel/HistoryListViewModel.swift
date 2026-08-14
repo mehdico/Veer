@@ -192,7 +192,24 @@ final class HistoryListViewModel {
 
     func deleteSelected() {
         guard let snapshot = currentSnapshot() else { return }
+        delete(snapshot)
+    }
+
+    /// Deletes a specific clip after asking for confirmation.
+    func delete(_ snapshot: ClipItemSnapshot) {
+        guard confirmDelete(snapshot) else { return }
         try? repository.delete(id: snapshot.id)
+    }
+
+    private func confirmDelete(_ snapshot: ClipItemSnapshot) -> Bool {
+        guard let alerter else { return true }
+        let what = snapshot.preview.map { "“\($0)”" } ?? "this clip"
+        return alerter.presentConfirmation(
+            message: "Delete clip?",
+            informativeText: "This removes \(what) from your history. This can't be undone.",
+            confirmTitle: "Delete",
+            cancelTitle: "Cancel"
+        )
     }
 
     func togglePreview() {

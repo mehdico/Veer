@@ -5,9 +5,23 @@ import Testing
 
 @MainActor
 struct HistoryListViewModelTests {
+    @MainActor
+    private final class MockAlerter: Alerting {
+        var confirm: Bool
+        private(set) var confirmationCount = 0
+        init(confirm: Bool) { self.confirm = confirm }
+        func presentError(_ error: Error) {}
+        func presentWarning(message: String, informativeText: String?) {}
+        func presentConfirmation(message: String, informativeText: String?, confirmTitle: String, cancelTitle: String) -> Bool {
+            confirmationCount += 1
+            return confirm
+        }
+    }
+
     private func makeViewModel(
         seedCount: Int = 0,
-        pasteDelay: Duration = .zero
+        pasteDelay: Duration = .zero,
+        alerter: (any Alerting)? = nil
     ) async throws -> (HistoryListViewModel, ClipRepositoryLive, MockPaster, MockPasteboardWriter, PanelCoordinator) {
         let container = try VeerStore.inMemory()
         let repo = ClipRepositoryLive(container: container)
@@ -26,7 +40,8 @@ struct HistoryListViewModelTests {
             paster: paster,
             pasteboardWriter: writer,
             panel: panel,
-            pasteDelay: pasteDelay
+            pasteDelay: pasteDelay,
+            alerter: alerter
         )
         vm.refresh()
         return (vm, repo, paster, writer, panel)
@@ -71,6 +86,52 @@ struct HistoryListViewModelTests {
         vm.deleteSelected()
         let after = try repo.fetchAll(limit: nil).count
         #expect(after == initial - 1)
+    }
+
+    @Test func deleteSelectedKeepsClipWhenConfirmationCancelled() async throws {
+        let alerter = MockAlerter(confirm: false)
+        let (vm, repo, _, _, _) = try await makeViewModel(seedCount: 3, alerter: alerter)
+        vm.selectedIndex = 1
+
+        vm.deleteSelected()
+
+        #expect(try repo.fetchAll(limit: nil).count == 3)
+        #expect(alerter.confirmationCount == 1)
+    }
+
+    @Test func deleteSelectedRemovesClipWhenConfirmed() async throws {
+        let alerter = MockAlerter(confirm: true)
+        let (vm, repo, _, _, _) = try await makeViewModel(seedCount: 3, alerter: alerter)
+        vm.selectedIndex = 1
+
+        vm.deleteSelected()
+
+        #expect(try repo.fetchAll(limit: nil).count == 2)
+        #expect(alerter.confirmationCount == 1)
+    }
+
+    @Test func deleteSpecificSnapshotAsksConfirmationAndRemovesIt() async throws {
+        let alerter = MockAlerter(confirm: true)
+        let (vm, repo, _, _, _) = try await makeViewModel(seedCount: 3, alerter: alerter)
+        let target = vm.items[2]
+
+        vm.delete(target)
+
+        #expect(try repo.fetchAll(limit: nil).count == 2)
+        #expect(try repo.fetchOne(id: target.id) == nil)
+        #expect(alerter.confirmationCount == 1)
+    }
+
+    @Test func deleteSpecificSnapshotKeepsClipWhenConfirmationCancelled() async throws {
+        let alerter = MockAlerter(confirm: false)
+        let (vm, repo, _, _, _) = try await makeViewModel(seedCount: 3, alerter: alerter)
+        let target = vm.items[2]
+
+        vm.delete(target)
+
+        #expect(try repo.fetchAll(limit: nil).count == 3)
+        #expect(try repo.fetchOne(id: target.id) != nil)
+        #expect(alerter.confirmationCount == 1)
     }
 
     @Test func pasteSelectedWritesPasteboardHidesPanelAndPastes() async throws {

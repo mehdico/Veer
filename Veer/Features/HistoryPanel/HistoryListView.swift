@@ -49,6 +49,11 @@ struct HistoryListView: View {
                                     isSelected: index == viewModel.selectedIndex,
                                     viewModel: viewModel
                                 )
+                                .contextMenu {
+                                    Button("Delete", role: .destructive) {
+                                        viewModel.delete(snapshot)
+                                    }
+                                }
                                 .transition(
                                     .asymmetric(
                                         insertion: .opacity.combined(with: .scale(scale: 0.98)).combined(with: .offset(y: 4)),

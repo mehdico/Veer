@@ -144,6 +144,11 @@ struct HistoryCardStripView: View {
                     shortcutBadge(shortcut + 1)
                 }
             }
+            .contextMenu {
+                Button("Delete", role: .destructive) {
+                    viewModel.delete(snapshot)
+                }
+            }
             .id(snapshot.id)
         }
     }
