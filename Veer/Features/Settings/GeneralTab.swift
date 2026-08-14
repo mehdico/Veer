@@ -7,6 +7,8 @@ struct GeneralTab: View {
 
     @State private var launchAtLogin: Bool
     @State private var appToAdd: String = ""
+    @State private var addableApps: [InstallableApp] = []
+    @State private var didLoadApps = false
 
     init(env: AppEnvironment) {
         self.env = env
@@ -55,6 +57,9 @@ struct GeneralTab: View {
             }
             .formStyle(.grouped)
             .padding(8)
+            .onAppear {
+                loadInstalledAppsIfNeeded()
+            }
             .onChange(of: settings.maxHistoryItems) { _, new in
                 try? env.repository.setMaxItems(new)
             }
@@ -98,8 +103,8 @@ struct GeneralTab: View {
             }
 
             Picker("Add app", selection: $appToAdd) {
-                Text("Choose a running app…").tag("")
-                ForEach(addableRunningApps) { app in
+                Text("Choose an app…").tag("")
+                ForEach(pickerApps) { app in
                     Text(app.name).tag(app.bundleId)
                 }
             }
@@ -111,26 +116,67 @@ struct GeneralTab: View {
         }
     }
 
-    private struct RunningApp: Identifiable {
+    private struct InstallableApp: Identifiable {
         let bundleId: String
         let name: String
         var id: String { bundleId }
     }
 
-    private var addableRunningApps: [RunningApp] {
-        let ownBundleId = Bundle.main.bundleIdentifier
+    private var pickerApps: [InstallableApp] {
         let ignored = Set(settings.ignoredAppBundleIds)
-        return NSWorkspace.shared.runningApplications
-            .filter { $0.activationPolicy == .regular }
-            .compactMap { app -> RunningApp? in
-                guard let bundleId = app.bundleIdentifier,
-                      let name = app.localizedName,
+        return addableApps.filter { !ignored.contains($0.bundleId) }
+    }
+
+    private func loadInstalledAppsIfNeeded() {
+        guard !didLoadApps else { return }
+        didLoadApps = true
+        let ownBundleId = Bundle.main.bundleIdentifier
+        Task { @MainActor in
+            let apps = await Task.detached(priority: .utility) {
+                Self.scanInstalledApps(excluding: ownBundleId)
+            }.value
+            addableApps = apps
+        }
+    }
+
+    private static let appSearchRoots: [URL] = [
+        URL(fileURLWithPath: "/Applications", isDirectory: true),
+        URL(fileURLWithPath: "/System/Applications", isDirectory: true),
+        URL(fileURLWithPath: "/System/Applications/Utilities", isDirectory: true),
+        URL(fileURLWithPath: "/System/Library/CoreServices", isDirectory: true),
+    ]
+
+    private static func scanInstalledApps(excluding ownBundleId: String?) -> [InstallableApp] {
+        var roots = appSearchRoots
+        if let userApps = try? FileManager.default.url(
+            for: .applicationDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: false
+        ) {
+            roots.append(userApps)
+        }
+        var apps: [InstallableApp] = []
+        var seen = Set<String>()
+        for root in roots {
+            guard let contents = try? FileManager.default.contentsOfDirectory(
+                at: root,
+                includingPropertiesForKeys: nil,
+                options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants]
+            ) else { continue }
+            for url in contents where url.pathExtension == "app" {
+                guard let bundle = Bundle(url: url),
+                      let bundleId = bundle.bundleIdentifier,
                       bundleId != ownBundleId,
-                      !ignored.contains(bundleId)
-                else { return nil }
-                return RunningApp(bundleId: bundleId, name: name)
+                      seen.insert(bundleId).inserted
+                else { continue }
+                let name = (bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String)
+                    ?? (bundle.object(forInfoDictionaryKey: "CFBundleName") as? String)
+                    ?? url.deletingPathExtension().lastPathComponent
+                apps.append(InstallableApp(bundleId: bundleId, name: name))
             }
-            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        }
+        return apps.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
     private static func displayName(for bundleId: String) -> String {
