@@ -140,8 +140,8 @@ struct HistoryCardStripView: View {
             )
             .frame(width: side, height: side)
             .overlay(alignment: .topTrailing) {
-                if (0...9).contains(shortcut) {
-                    shortcutBadge(shortcut)
+                if (0...8).contains(shortcut) {
+                    shortcutBadge(shortcut + 1)
                 }
             }
             .id(snapshot.id)

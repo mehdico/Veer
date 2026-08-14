@@ -13,7 +13,7 @@ struct HelpView: View {
                     bullet("Type to filter the history with fuzzy search.")
                     bullet("Press **Space** to open a full-fidelity preview window.")
                     bullet("**⌃⌫** deletes the currently selected clip.")
-                    bullet("**⌘0 … ⌘9** instantly pastes the first ten items.")
+                    bullet("**⌘1 … ⌘9** instantly pastes the first nine items.")
                     bullet("**⌃⌥⌘ + arrow keys** reposition the panel across edges of the screen.")
                 }
                 Text("Permissions")

@@ -23,7 +23,7 @@ struct HotkeysTab: View {
                 staticRow(keys: "Esc", description: "Close panel")
                 staticRow(keys: "Space", description: "Toggle preview")
                 staticRow(keys: "⌃⌫", description: "Delete selected clip")
-                staticRow(keys: "⌘0 … ⌘9", description: "Paste by number")
+                staticRow(keys: "⌘1 … ⌘9", description: "Paste by number")
             }
         }
         .formStyle(.grouped)

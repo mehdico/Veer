@@ -10,7 +10,7 @@ A native SwiftUI clipboard manager for macOS. Clean-room rewrite of [Yippy](../Y
 - Fuzzy search across history, live as you type.
 - Floating preview window (Spacebar) for full-fidelity text / image / color / PDF / file rendering.
 - 11 panel positions with `⌃⌥⌘ + arrow` shortcuts; vertical list + horizontal card strip layouts.
-- ⌘0 … ⌘9 quick-paste; ⌃⌫ delete selected; Esc closes.
+- ⌘1 … ⌘9 quick-paste; ⌃⌫ delete selected; Esc closes.
 - Launch-at-login via `SMAppService`.
 
 ## Requirements

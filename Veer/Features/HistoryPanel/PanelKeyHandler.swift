@@ -93,9 +93,9 @@ enum PanelKeyHandler {
         if mods.contains(.command),
            let first = chars.unicodeScalars.first,
            let digit = Int(String(first)),
-           (0...9).contains(digit)
+           (1...9).contains(digit)
         {
-            let absolute = viewModel.quickPasteBase + digit
+            let absolute = viewModel.quickPasteBase + digit - 1
             Task { await viewModel.selectAndPaste(quickIndex: absolute) }
             return .handled
         }
