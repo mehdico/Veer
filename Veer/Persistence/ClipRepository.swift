@@ -34,4 +34,5 @@ enum InsertOutcome: Equatable {
     case rejectedDenyListed
     case rejectedDuplicate
     case rejectedNonText
+    case rejectedIgnoredApp
 }

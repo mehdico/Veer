@@ -6,6 +6,7 @@ struct VeerSettings: Codable, Sendable, Equatable {
     var pastesRichText: Bool = true
     var showAsCards: Bool = true
     var textOnlyHistory: Bool = false
+    var ignoredAppBundleIds: [String] = []
     var panelSizeByPosition: [Int: PanelSize] = [:]
 }
 
@@ -16,6 +17,7 @@ extension VeerSettings {
         case pastesRichText
         case showAsCards
         case textOnlyHistory
+        case ignoredAppBundleIds
         case panelSizeByPosition
     }
 
@@ -29,6 +31,7 @@ extension VeerSettings {
         self.pastesRichText = try container.decodeIfPresent(Bool.self, forKey: .pastesRichText) ?? true
         self.showAsCards = try container.decodeIfPresent(Bool.self, forKey: .showAsCards) ?? true
         self.textOnlyHistory = try container.decodeIfPresent(Bool.self, forKey: .textOnlyHistory) ?? false
+        self.ignoredAppBundleIds = try container.decodeIfPresent([String].self, forKey: .ignoredAppBundleIds) ?? []
         self.panelSizeByPosition = try container.decodeIfPresent([Int: PanelSize].self, forKey: .panelSizeByPosition) ?? [:]
     }
 }

@@ -11,6 +11,7 @@ final class SettingsStore {
     var pastesRichText: Bool { didSet { persist() } }
     var showAsCards: Bool { didSet { persist() } }
     var textOnlyHistory: Bool { didSet { persist() } }
+    private(set) var ignoredAppBundleIds: [String] { didSet { persist() } }
     private(set) var panelSizeByPosition: [Int: PanelSize] { didSet { persist() } }
 
     @ObservationIgnored let defaults: UserDefaults
@@ -23,6 +24,7 @@ final class SettingsStore {
         self.pastesRichText = loaded.pastesRichText
         self.showAsCards = loaded.showAsCards
         self.textOnlyHistory = loaded.textOnlyHistory
+        self.ignoredAppBundleIds = loaded.ignoredAppBundleIds
         self.panelSizeByPosition = loaded.panelSizeByPosition
     }
 
@@ -33,8 +35,18 @@ final class SettingsStore {
             pastesRichText: pastesRichText,
             showAsCards: showAsCards,
             textOnlyHistory: textOnlyHistory,
+            ignoredAppBundleIds: ignoredAppBundleIds,
             panelSizeByPosition: panelSizeByPosition
         )
+    }
+
+    func addIgnoredApp(_ bundleId: String) {
+        guard !bundleId.isEmpty, !ignoredAppBundleIds.contains(bundleId) else { return }
+        ignoredAppBundleIds.append(bundleId)
+    }
+
+    func removeIgnoredApp(_ bundleId: String) {
+        ignoredAppBundleIds.removeAll { $0 == bundleId }
     }
 
     func panelSize(for positionRawValue: Int, matchingScreenSize screenSize: CGSize) -> CGSize? {

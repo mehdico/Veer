@@ -16,6 +16,7 @@ struct SettingsStoreTests {
         #expect(store.pastesRichText == true)
         #expect(store.showAsCards == true)
         #expect(store.textOnlyHistory == false)
+        #expect(store.ignoredAppBundleIds.isEmpty)
         #expect(store.panelSizeByPosition.isEmpty)
     }
 
@@ -83,5 +84,21 @@ struct SettingsStoreTests {
         #expect(store.pastesRichText == false)
         #expect(store.showAsCards == false)
         #expect(store.textOnlyHistory == false)
+        #expect(store.ignoredAppBundleIds.isEmpty)
+    }
+
+    @Test func ignoredAppsCanBeAddedRemovedAndPersist() {
+        let defaults = makeDefaults()
+        let first = SettingsStore(defaults: defaults)
+        first.addIgnoredApp("com.example.one")
+        first.addIgnoredApp("com.example.two")
+        first.addIgnoredApp("com.example.one") // duplicate is ignored
+        #expect(first.ignoredAppBundleIds == ["com.example.one", "com.example.two"])
+        first.removeIgnoredApp("com.example.one")
+
+        let second = SettingsStore(defaults: defaults)
+        #expect(second.ignoredAppBundleIds == ["com.example.two"])
+        second.addIgnoredApp("")
+        #expect(second.ignoredAppBundleIds == ["com.example.two"])
     }
 }

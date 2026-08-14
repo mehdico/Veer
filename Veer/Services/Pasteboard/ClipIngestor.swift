@@ -5,17 +5,20 @@ final class ClipIngestor {
     private let monitor: any PasteboardMonitoring
     private let repository: any ClipRepository
     private let textOnlyHistory: () -> Bool
+    private let ignoredAppBundleIds: () -> Set<String>
     private let logger = VeerLogger(category: .pasteboard)
     private var consumeTask: Task<Void, Never>?
 
     init(
         monitor: any PasteboardMonitoring,
         repository: any ClipRepository,
-        textOnlyHistory: @escaping () -> Bool = { false }
+        textOnlyHistory: @escaping () -> Bool = { false },
+        ignoredAppBundleIds: @escaping () -> Set<String> = { [] }
     ) {
         self.monitor = monitor
         self.repository = repository
         self.textOnlyHistory = textOnlyHistory
+        self.ignoredAppBundleIds = ignoredAppBundleIds
     }
 
     func start() {
@@ -37,6 +40,10 @@ final class ClipIngestor {
 
     @discardableResult
     func ingest(_ event: MonitorEvent) -> InsertOutcome {
+        if let bundleId = event.sourceBundleId, ignoredAppBundleIds().contains(bundleId) {
+            logger.info("ingest rejected: source app is ignored (bundle=\(bundleId))")
+            return .rejectedIgnoredApp
+        }
         if textOnlyHistory(), !event.payload.isTextOnly {
             logger.info("ingest rejected: non-text payload in text-only mode (bundle=\(event.sourceBundleId ?? "nil"))")
             return .rejectedNonText
@@ -51,6 +58,10 @@ final class ClipIngestor {
 
     private func ingestAsync(_ event: MonitorEvent) async {
         let payload = event.payload
+        if let bundleId = event.sourceBundleId, ignoredAppBundleIds().contains(bundleId) {
+            logger.info("ingest rejected: source app is ignored (bundle=\(bundleId))")
+            return
+        }
         if textOnlyHistory(), !payload.isTextOnly {
             logger.info("ingest rejected: non-text payload in text-only mode (bundle=\(event.sourceBundleId ?? "nil"))")
             return

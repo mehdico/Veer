@@ -157,4 +157,54 @@ struct ClipIngestorTests {
 
         ingestor.stop()
     }
+
+    @Test func eventsFromIgnoredAppsAreRejected() {
+        let repo = MockClipRepository()
+        let monitor = StubMonitor()
+        let ingestor = ClipIngestor(monitor: monitor, repository: repo, ignoredAppBundleIds: { ["com.ignored"] })
+
+        #expect(ingestor.ingest(textEvent("secret", bundle: "com.ignored")) == .rejectedIgnoredApp)
+        #expect(repo.inserted.isEmpty)
+    }
+
+    @Test func eventsFromNonIgnoredAppsAreStored() {
+        let repo = MockClipRepository()
+        let monitor = StubMonitor()
+        let ingestor = ClipIngestor(monitor: monitor, repository: repo, ignoredAppBundleIds: { ["com.ignored"] })
+
+        if case .inserted = ingestor.ingest(textEvent("hi", bundle: "com.other")) {} else {
+            Issue.record("Expected event from non-ignored app to be inserted")
+        }
+        #expect(repo.inserted.count == 1)
+    }
+
+    @Test func eventsWithoutSourceAppAreStored() {
+        let repo = MockClipRepository()
+        let monitor = StubMonitor()
+        let ingestor = ClipIngestor(monitor: monitor, repository: repo, ignoredAppBundleIds: { ["com.ignored"] })
+
+        if case .inserted = ingestor.ingest(textEvent("hi")) {} else {
+            Issue.record("Expected event without a source app to be inserted")
+        }
+        #expect(repo.inserted.count == 1)
+    }
+
+    @Test func ignoredAppEventsAreSkippedFromStream() async throws {
+        let repo = MockClipRepository()
+        let monitor = StubMonitor()
+        let ingestor = ClipIngestor(monitor: monitor, repository: repo, ignoredAppBundleIds: { ["com.ignored"] })
+
+        ingestor.start()
+        monitor.push(textEvent("a", bundle: "com.ignored"))
+        monitor.push(textEvent("b", bundle: "com.other"))
+
+        let deadline = Date().addingTimeInterval(10)
+        while repo.inserted.count < 1 && Date() < deadline {
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(repo.inserted.count == 1)
+        #expect(repo.inserted.first?.sourceBundleId == "com.other")
+
+        ingestor.stop()
+    }
 }
