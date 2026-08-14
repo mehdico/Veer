@@ -15,6 +15,7 @@ struct SettingsStoreTests {
         #expect(store.showsRichText == true)
         #expect(store.pastesRichText == true)
         #expect(store.showAsCards == true)
+        #expect(store.textOnlyHistory == false)
         #expect(store.panelSizeByPosition.isEmpty)
     }
 
@@ -25,6 +26,7 @@ struct SettingsStoreTests {
         first.showsRichText = false
         first.pastesRichText = false
         first.showAsCards = false
+        first.textOnlyHistory = true
         first.setPanelSize(CGSize(width: 123, height: 456), for: 3, onScreenOfSize: CGSize(width: 1440, height: 900))
 
         let second = SettingsStore(defaults: defaults)
@@ -32,6 +34,7 @@ struct SettingsStoreTests {
         #expect(second.showsRichText == false)
         #expect(second.pastesRichText == false)
         #expect(second.showAsCards == false)
+        #expect(second.textOnlyHistory == true)
         #expect(second.panelSize(for: 3, matchingScreenSize: CGSize(width: 1440, height: 900)) == CGSize(width: 123, height: 456))
     }
 
@@ -66,5 +69,19 @@ struct SettingsStoreTests {
         defaults.set(Data([0x01, 0x02, 0x03]), forKey: SettingsStore.userDefaultsKey)
         let store = SettingsStore(defaults: defaults)
         #expect(store.maxHistoryItems == Constants.History.defaultMax)
+    }
+
+    @Test func settingsSavedBeforeTextOnlyFieldExistedKeepOtherValues() {
+        let defaults = makeDefaults()
+        let legacyJSON = """
+        {"maxHistoryItems":200,"showsRichText":false,"pastesRichText":false,"showAsCards":false,"panelSizeByPosition":{}}
+        """
+        defaults.set(Data(legacyJSON.utf8), forKey: SettingsStore.userDefaultsKey)
+        let store = SettingsStore(defaults: defaults)
+        #expect(store.maxHistoryItems == 200)
+        #expect(store.showsRichText == false)
+        #expect(store.pastesRichText == false)
+        #expect(store.showAsCards == false)
+        #expect(store.textOnlyHistory == false)
     }
 }

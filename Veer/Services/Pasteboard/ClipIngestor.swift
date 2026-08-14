@@ -4,12 +4,18 @@ import Foundation
 final class ClipIngestor {
     private let monitor: any PasteboardMonitoring
     private let repository: any ClipRepository
+    private let textOnlyHistory: () -> Bool
     private let logger = VeerLogger(category: .pasteboard)
     private var consumeTask: Task<Void, Never>?
 
-    init(monitor: any PasteboardMonitoring, repository: any ClipRepository) {
+    init(
+        monitor: any PasteboardMonitoring,
+        repository: any ClipRepository,
+        textOnlyHistory: @escaping () -> Bool = { false }
+    ) {
         self.monitor = monitor
         self.repository = repository
+        self.textOnlyHistory = textOnlyHistory
     }
 
     func start() {
@@ -31,7 +37,11 @@ final class ClipIngestor {
 
     @discardableResult
     func ingest(_ event: MonitorEvent) -> InsertOutcome {
-        (try? repository.insert(
+        if textOnlyHistory(), !event.payload.isTextOnly {
+            logger.info("ingest rejected: non-text payload in text-only mode (bundle=\(event.sourceBundleId ?? "nil"))")
+            return .rejectedNonText
+        }
+        return (try? repository.insert(
             payload: event.payload,
             sourceBundleId: event.sourceBundleId,
             thumbnailPNG: nil,
@@ -41,6 +51,10 @@ final class ClipIngestor {
 
     private func ingestAsync(_ event: MonitorEvent) async {
         let payload = event.payload
+        if textOnlyHistory(), !payload.isTextOnly {
+            logger.info("ingest rejected: non-text payload in text-only mode (bundle=\(event.sourceBundleId ?? "nil"))")
+            return
+        }
         let prepared = await Task.detached(priority: .utility) {
             (payload.thumbnailPNG(), payload.digest())
         }.value

@@ -121,7 +121,7 @@ final class AppEnvironment {
         pasteboardWriter.onWrite = { [weak monitor] count in
             monitor?.acknowledge(changeCount: count)
         }
-        let ingestor = ClipIngestor(monitor: monitor, repository: repository)
+        let ingestor = ClipIngestor(monitor: monitor, repository: repository, textOnlyHistory: { settings.textOnlyHistory })
         let panel = PanelCoordinator()
         panel.horizontal = settings.showAsCards
         let preview = PreviewCoordinator()

@@ -10,6 +10,7 @@ final class SettingsStore {
     var showsRichText: Bool { didSet { persist() } }
     var pastesRichText: Bool { didSet { persist() } }
     var showAsCards: Bool { didSet { persist() } }
+    var textOnlyHistory: Bool { didSet { persist() } }
     private(set) var panelSizeByPosition: [Int: PanelSize] { didSet { persist() } }
 
     @ObservationIgnored let defaults: UserDefaults
@@ -21,6 +22,7 @@ final class SettingsStore {
         self.showsRichText = loaded.showsRichText
         self.pastesRichText = loaded.pastesRichText
         self.showAsCards = loaded.showAsCards
+        self.textOnlyHistory = loaded.textOnlyHistory
         self.panelSizeByPosition = loaded.panelSizeByPosition
     }
 
@@ -30,6 +32,7 @@ final class SettingsStore {
             showsRichText: showsRichText,
             pastesRichText: pastesRichText,
             showAsCards: showAsCards,
+            textOnlyHistory: textOnlyHistory,
             panelSizeByPosition: panelSizeByPosition
         )
     }

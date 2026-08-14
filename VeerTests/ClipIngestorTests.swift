@@ -32,6 +32,27 @@ struct ClipIngestorTests {
         )
     }
 
+    private func imageEvent() -> MonitorEvent {
+        MonitorEvent(
+            payload: ClipPayload(typed: [NSPasteboard.PasteboardType.png.rawValue: Data([0x89, 0x50])]),
+            sourceBundleId: nil
+        )
+    }
+
+    private func fileEvent() -> MonitorEvent {
+        MonitorEvent(
+            payload: ClipPayload(typed: [NSPasteboard.PasteboardType.fileURL.rawValue: Data("file:///tmp/a.txt".utf8)]),
+            sourceBundleId: nil
+        )
+    }
+
+    private func richTextEvent() -> MonitorEvent {
+        MonitorEvent(
+            payload: ClipPayload(typed: [NSPasteboard.PasteboardType.rtf.rawValue: Data("rtf".utf8)]),
+            sourceBundleId: nil
+        )
+    }
+
     @Test func ingestForwardsToRepository() throws {
         let repo = MockClipRepository()
         let monitor = StubMonitor()
@@ -81,5 +102,59 @@ struct ClipIngestorTests {
 
         ingestor.stop()
         #expect(monitor.stopCalls == 1)
+    }
+
+    @Test func textOnlyModeRejectsImagesAndFiles() {
+        let repo = MockClipRepository()
+        let monitor = StubMonitor()
+        let ingestor = ClipIngestor(monitor: monitor, repository: repo, textOnlyHistory: { true })
+
+        #expect(ingestor.ingest(imageEvent()) == .rejectedNonText)
+        #expect(ingestor.ingest(fileEvent()) == .rejectedNonText)
+        #expect(repo.inserted.isEmpty)
+    }
+
+    @Test func textOnlyModeStillStoresTextAndRichText() {
+        let repo = MockClipRepository()
+        let monitor = StubMonitor()
+        let ingestor = ClipIngestor(monitor: monitor, repository: repo, textOnlyHistory: { true })
+
+        if case .inserted = ingestor.ingest(textEvent("hello")) {} else {
+            Issue.record("Expected text to be inserted")
+        }
+        if case .inserted = ingestor.ingest(richTextEvent()) {} else {
+            Issue.record("Expected rich text to be inserted")
+        }
+        #expect(repo.inserted.count == 2)
+    }
+
+    @Test func defaultPolicyStoresImages() {
+        let repo = MockClipRepository()
+        let monitor = StubMonitor()
+        let ingestor = ClipIngestor(monitor: monitor, repository: repo)
+
+        if case .inserted = ingestor.ingest(imageEvent()) {} else {
+            Issue.record("Expected image to be inserted")
+        }
+        #expect(repo.inserted.count == 1)
+    }
+
+    @Test func textOnlyModeSkipsNonTextEventsFromStream() async throws {
+        let repo = MockClipRepository()
+        let monitor = StubMonitor()
+        let ingestor = ClipIngestor(monitor: monitor, repository: repo, textOnlyHistory: { true })
+
+        ingestor.start()
+        monitor.push(imageEvent())
+        monitor.push(textEvent("kept"))
+
+        let deadline = Date().addingTimeInterval(10)
+        while repo.inserted.count < 1 && Date() < deadline {
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(repo.inserted.count == 1)
+        #expect(repo.inserted.first?.payload.plainTextPreview() == "kept")
+
+        ingestor.stop()
     }
 }

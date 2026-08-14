@@ -23,6 +23,13 @@ struct GeneralTab: View {
                 .accessibilityIdentifier("settingsMaxItemsPicker")
             }
 
+            Section {
+                Toggle("Only store text", isOn: $settings.textOnlyHistory)
+                    .accessibilityIdentifier("settingsTextOnlyToggle")
+            } footer: {
+                Text("All files are skipped when on — even text files. Only text in any format (plain, rich, HTML) is saved.")
+            }
+
             Section("Appearance") {
                 Toggle("Show formatted text in clips", isOn: $settings.showsRichText)
                     .accessibilityIdentifier("settingsShowsRichTextToggle")

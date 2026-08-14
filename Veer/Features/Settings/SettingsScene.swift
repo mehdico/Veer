@@ -12,6 +12,6 @@ struct SettingsScene: View {
                 .tabItem { Label("Shortcuts", systemImage: "keyboard") }
                 .accessibilityIdentifier("settingsHotkeysTab")
         }
-        .frame(width: 480, height: 360)
+        .frame(width: 480, height: 440)
     }
 }
