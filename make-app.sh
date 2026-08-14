@@ -2,7 +2,7 @@
 # Build the Veer app in Release configuration and copy Veer.app to a folder.
 #
 # Usage:
-#   ./make-app.sh                 # copies Veer.app to ~/Desktop
+#   ./make-app.sh                 # copies Veer.app to the current directory
 #   ./make-app.sh ~/Some/Folder   # copies Veer.app to that folder
 #
 # Requires Xcode (or Command Line Tools). The build cache lives in .build/
@@ -14,7 +14,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT="$SCRIPT_DIR/Veer.xcodeproj"
 SCHEME="Veer"
 DERIVED_DATA="$SCRIPT_DIR/.build"
-DEST_DIR="${1:-$HOME/Desktop}"
+DEST_DIR="${1:-$(pwd)}"
 
 if ! command -v xcodebuild >/dev/null 2>&1; then
     echo "error: xcodebuild not found. Install Xcode or the Command Line Tools." >&2
