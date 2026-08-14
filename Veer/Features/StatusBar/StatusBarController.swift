@@ -58,7 +58,12 @@ final class StatusBarController: NSObject, StatusMenuActions {
                   $0.accessibilityIdentifier() == AccessibilityIdentifiers.debugHistoryCount
               })
         else { return }
-        let count = (try? env.repository.fetchAll(limit: nil).count) ?? 0
+        let count: Int
+        if let live = env.repository as? ClipRepositoryLive {
+            count = (try? live.count()) ?? 0
+        } else {
+            count = (try? env.repository.fetchAll(limit: nil).count) ?? 0
+        }
         item.title = "Debug: history \(count)"
     }
     #endif

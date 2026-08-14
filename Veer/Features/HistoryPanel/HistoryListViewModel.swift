@@ -12,6 +12,10 @@ final class HistoryListViewModel {
     var selectedIndex: Int = 0
     var quickPasteBase: Int = 0
     private(set) var filteredIDs: [UUID] = []
+    private(set) var filteredItems: [ClipItemSnapshot] = []
+
+    @ObservationIgnored private var itemsByID: [UUID: ClipItemSnapshot] = [:]
+    @ObservationIgnored private let blobDataCache = NSCache<NSString, NSData>()
 
     @ObservationIgnored let repository: any ClipRepository
     @ObservationIgnored let paster: any PasteSimulating
@@ -79,6 +83,7 @@ final class HistoryListViewModel {
         self.pasteDelay = pasteDelay
         self.access = access
         self.alerter = alerter
+        self.blobDataCache.countLimit = 256
     }
 
     convenience init(
@@ -109,8 +114,8 @@ final class HistoryListViewModel {
         refreshTask?.cancel()
         let stream = repository.changes
         refreshTask = Task { @MainActor [weak self] in
-            for await _ in stream {
-                self?.applyRepositoryChange()
+            for await change in stream {
+                self?.applyRepositoryChange(change)
             }
         }
     }
@@ -124,43 +129,55 @@ final class HistoryListViewModel {
         let limit = repository.maxItems
         let fetched = (try? repository.fetchAll(limit: limit)) ?? []
         items = fetched.map(ClipItemSnapshot.init)
+        itemsByID = Dictionary(uniqueKeysWithValues: items.map { ($0.id, $0) })
         runSearch()
     }
 
-    private func applyRepositoryChange() {
-        let limit = repository.maxItems
-        guard let fetched = try? repository.fetchAll(limit: limit) else { return }
-        let snapshots = fetched.map(ClipItemSnapshot.init)
-        if snapshots.count == items.count + 1,
-           let newFirst = snapshots.first,
-           items.first?.id != newFirst.id
-        {
-            items.insert(newFirst, at: 0)
-            if items.count > limit {
-                items.removeLast(items.count - limit)
-            }
-        } else if snapshots != items {
-            items = snapshots
-        } else {
-            return
+    private func applyRepositoryChange(_ change: RepositoryChange) {
+        switch change {
+        case .inserted(let id):
+            guard let item = try? repository.fetchOne(id: id) else { return }
+            let snapshot = ClipItemSnapshot(item)
+            items.removeAll { $0.id == id }
+            items.insert(snapshot, at: 0)
+            itemsByID[id] = snapshot
+            trimToLimit()
+            runSearch()
+        case .movedToFront(let id):
+            guard let item = try? repository.fetchOne(id: id) else { return }
+            let snapshot = ClipItemSnapshot(item)
+            itemsByID[id] = snapshot
+            guard let index = items.firstIndex(where: { $0.id == id }) else { return }
+            items.remove(at: index)
+            items.insert(snapshot, at: 0)
+            runSearch()
+        case .deleted(let id):
+            guard itemsByID[id] != nil else { return }
+            itemsByID[id] = nil
+            items.removeAll { $0.id == id }
+            runSearch()
+        case .cleared:
+            items = []
+            itemsByID = [:]
+            runSearch()
+        case .capped:
+            refresh()
         }
-        runSearch()
+    }
+
+    private func trimToLimit() {
+        let limit = repository.maxItems
+        guard items.count > limit else { return }
+        for evicted in items.dropFirst(limit) {
+            itemsByID[evicted.id] = nil
+        }
+        items.removeLast(items.count - limit)
     }
 
     func resetForShow() {
         searchText = ""
         selectedIndex = 0
         quickPasteBase = 0
-    }
-
-    var filteredItems: [ClipItemSnapshot] {
-        if searchText.isEmpty { return items }
-        let lookup = Dictionary(uniqueKeysWithValues: items.map { ($0.id, $0) })
-        return filteredIDs.compactMap { lookup[$0] }
-    }
-
-    var filteredItemsLookup: [UUID: ClipItemSnapshot] {
-        Dictionary(uniqueKeysWithValues: filteredItems.map { ($0.id, $0) })
     }
 
     func navigateUp(by step: Int = 1) {
@@ -246,17 +263,34 @@ final class HistoryListViewModel {
     }
 
     func blob(for id: UUID, type: String) -> Data? {
-        guard let item = try? repository.fetchOne(id: id) else { return nil }
-        return item.blobs.first { $0.typeRawValue == type }?.data
+        let key = Self.blobCacheKey(id: id, type: type)
+        if let cached = blobDataCache.object(forKey: key) { return cached as Data }
+        guard let data = try? repository.fetchBlob(id: id, type: type) else { return nil }
+        blobDataCache.setObject(data as NSData, forKey: key)
+        return data
+    }
+
+    func thumbnailPNG(for id: UUID) -> Data? {
+        let key = Self.blobCacheKey(id: id, type: "thumbnail")
+        if let cached = blobDataCache.object(forKey: key) { return cached as Data }
+        guard let data = try? repository.fetchThumbnail(id: id) else { return nil }
+        blobDataCache.setObject(data as NSData, forKey: key)
+        return data
+    }
+
+    private static func blobCacheKey(id: UUID, type: String) -> NSString {
+        "\(id.uuidString)|\(type)" as NSString
     }
 
     private func runSearch() {
         if searchText.isEmpty {
-            filteredIDs = items.map(\.id)
+            filteredItems = items
         } else {
             let candidates = items.map { SearchCandidate(id: $0.id, text: $0.preview ?? "") }
-            filteredIDs = searchEngine.search(query: searchText, in: candidates)
+            let ids = searchEngine.search(query: searchText, in: candidates)
+            filteredItems = ids.compactMap { itemsByID[$0] }
         }
+        filteredIDs = filteredItems.map(\.id)
         selectedIndex = 0
         clampSelection()
     }

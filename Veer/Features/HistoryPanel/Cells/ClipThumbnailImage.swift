@@ -2,8 +2,12 @@ import AppKit
 import SwiftUI
 
 struct ClipThumbnailImage: View {
-    let pngData: Data?
+    let clipID: UUID
+    let pngProvider: () -> Data?
+
     @State private var image: NSImage?
+
+    private static let cache = NSCache<NSString, NSImage>()
 
     var body: some View {
         Group {
@@ -19,8 +23,13 @@ struct ClipThumbnailImage: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .task(id: pngData) {
-            guard let pngData else {
+        .task(id: clipID) {
+            let key = clipID.uuidString as NSString
+            if let cached = Self.cache.object(forKey: key) {
+                image = cached
+                return
+            }
+            guard let pngData = pngProvider() else {
                 image = nil
                 return
             }
@@ -29,6 +38,9 @@ struct ClipThumbnailImage: View {
             }.value
             if !Task.isCancelled {
                 image = decoded
+                if let decoded {
+                    Self.cache.setObject(decoded, forKey: key)
+                }
             }
         }
     }

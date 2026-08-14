@@ -19,7 +19,9 @@ final class CGEventPaster: PasteSimulating {
         down.flags = .maskCommand
         up.flags = .maskCommand
         down.post(tap: .cgSessionEventTap)
-        usleep(5_000)
-        up.post(tap: .cgSessionEventTap)
+        // Post the key-up slightly later instead of blocking the main thread with usleep.
+        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(5)) {
+            up.post(tap: .cgSessionEventTap)
+        }
     }
 }

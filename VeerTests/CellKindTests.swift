@@ -11,8 +11,7 @@ struct CellKindTests {
             createdAt: .init(),
             sourceBundleId: nil,
             preview: nil,
-            typeRawValues: types.map(\.rawValue),
-            thumbnailPNG: nil
+            typeRawValues: types.map(\.rawValue)
         )
     }
 

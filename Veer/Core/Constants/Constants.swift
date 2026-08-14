@@ -34,6 +34,11 @@ enum Constants {
             "net.antelle.keeweb",
         ]
         static let maxTypesPerItem = 32
+        /// Consecutive snapshot retries allowed before spacing them out while the
+        /// writing app is still filling the pasteboard.
+        static let monitorSnapshotBurst = 3
+        static let monitorSnapshotBackoffBaseMilliseconds = 25
+        static let monitorSnapshotBackoffCapMilliseconds = 250
     }
 
     enum UI {

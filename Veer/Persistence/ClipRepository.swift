@@ -1,5 +1,15 @@
 import Foundation
 
+/// A mutation broadcast to `changes` subscribers, so consumers can apply deltas
+/// instead of re-fetching the whole history on every change.
+enum RepositoryChange: Sendable, Equatable {
+    case inserted(UUID)
+    case movedToFront(UUID)
+    case deleted(UUID)
+    case cleared
+    case capped
+}
+
 @MainActor
 protocol ClipRepository: AnyObject {
     var maxItems: Int { get }
@@ -7,24 +17,44 @@ protocol ClipRepository: AnyObject {
         payload: ClipPayload,
         sourceBundleId: String?,
         thumbnailPNG: Data?,
-        payloadDigest: Data?
+        payloadDigest: Data?,
+        preview: String?
     ) throws -> InsertOutcome
     func fetchAll(limit: Int?) throws -> [ClipItem]
     func fetchOne(id: UUID) throws -> ClipItem?
+    func fetchBlob(id: UUID, type: String) throws -> Data?
+    func fetchThumbnail(id: UUID) throws -> Data?
     func moveToFront(id: UUID) throws
     func delete(id: UUID) throws
     func clear() throws
     func setMaxItems(_ n: Int) throws
-    var changes: AsyncStream<Void> { get }
+    var changes: AsyncStream<RepositoryChange> { get }
 }
 
 extension ClipRepository {
     func insert(payload: ClipPayload, sourceBundleId: String?) throws -> InsertOutcome {
-        try insert(payload: payload, sourceBundleId: sourceBundleId, thumbnailPNG: nil, payloadDigest: nil)
+        try insert(payload: payload, sourceBundleId: sourceBundleId, thumbnailPNG: nil, payloadDigest: nil, preview: nil)
     }
 
     func insert(payload: ClipPayload, sourceBundleId: String?, thumbnailPNG: Data?) throws -> InsertOutcome {
-        try insert(payload: payload, sourceBundleId: sourceBundleId, thumbnailPNG: thumbnailPNG, payloadDigest: nil)
+        try insert(payload: payload, sourceBundleId: sourceBundleId, thumbnailPNG: thumbnailPNG, payloadDigest: nil, preview: nil)
+    }
+
+    func insert(
+        payload: ClipPayload,
+        sourceBundleId: String?,
+        thumbnailPNG: Data?,
+        payloadDigest: Data?
+    ) throws -> InsertOutcome {
+        try insert(payload: payload, sourceBundleId: sourceBundleId, thumbnailPNG: thumbnailPNG, payloadDigest: payloadDigest, preview: nil)
+    }
+
+    func fetchBlob(id: UUID, type: String) throws -> Data? {
+        try fetchOne(id: id)?.blobs.first { $0.typeRawValue == type }?.data
+    }
+
+    func fetchThumbnail(id: UUID) throws -> Data? {
+        try fetchOne(id: id)?.thumbnailPNG
     }
 }
 

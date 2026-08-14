@@ -6,22 +6,19 @@ struct ClipItemSnapshot: Identifiable, Hashable, Sendable {
     let sourceBundleId: String?
     let preview: String?
     let typeRawValues: [String]
-    let thumbnailPNG: Data?
 
     init(
         id: UUID,
         createdAt: Date,
         sourceBundleId: String?,
         preview: String?,
-        typeRawValues: [String],
-        thumbnailPNG: Data?
+        typeRawValues: [String]
     ) {
         self.id = id
         self.createdAt = createdAt
         self.sourceBundleId = sourceBundleId
         self.preview = preview
         self.typeRawValues = typeRawValues
-        self.thumbnailPNG = thumbnailPNG
     }
 }
 
@@ -32,8 +29,7 @@ extension ClipItemSnapshot {
             createdAt: item.createdAt,
             sourceBundleId: item.sourceBundleId,
             preview: item.preview,
-            typeRawValues: item.typeRawValues,
-            thumbnailPNG: item.thumbnailPNG
+            typeRawValues: item.typeRawValues
         )
     }
 }

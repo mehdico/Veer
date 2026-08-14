@@ -14,6 +14,7 @@ final class PasteboardMonitor: PasteboardMonitoring {
     private var pendingChangeCount: Int?
     private var pendingStart: ContinuousClock.Instant?
     private var pendingSourceBundleId: String?
+    private var lastSnapshotAttempt: ContinuousClock.Instant?
     private let maxPendingWait: Duration
     private let maxLoadingWait: Duration
     private var pollTask: Task<Void, Never>?
@@ -66,7 +67,19 @@ final class PasteboardMonitor: PasteboardMonitoring {
             pendingStart = ContinuousClock().now
             pendingSourceBundleId = frontmost.currentBundleId()
             emptyRetries = 0
+            lastSnapshotAttempt = nil
         }
+        // While the writing app is still filling the pasteboard, re-reading all types
+        // every 10ms re-materializes the full payload each time. Snapshot a few times
+        // quickly, then back off so large copies don't hammer the main thread.
+        let now = ContinuousClock().now
+        if let lastAttempt = lastSnapshotAttempt,
+           emptyRetries >= Constants.Pasteboard.monitorSnapshotBurst,
+           lastAttempt.duration(to: now) < Self.backoff(forEmptyRetries: emptyRetries)
+        {
+            return
+        }
+        lastSnapshotAttempt = now
         let snapshots = source.snapshot()
         let nonEmpty = snapshots.filter { !$0.typed.isEmpty }
         if nonEmpty.isEmpty {
@@ -115,5 +128,14 @@ final class PasteboardMonitor: PasteboardMonitoring {
             pendingStart = nil
             pendingSourceBundleId = nil
         }
+    }
+
+    private static func backoff(forEmptyRetries retries: Int) -> Duration {
+        let exponent = max(0, retries - Constants.Pasteboard.monitorSnapshotBurst)
+        let milliseconds = min(
+            Constants.Pasteboard.monitorSnapshotBackoffCapMilliseconds,
+            Constants.Pasteboard.monitorSnapshotBackoffBaseMilliseconds << min(exponent, 4)
+        )
+        return .milliseconds(milliseconds)
     }
 }

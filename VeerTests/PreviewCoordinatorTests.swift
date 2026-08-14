@@ -11,8 +11,7 @@ struct PreviewCoordinatorTests {
             createdAt: .init(),
             sourceBundleId: nil,
             preview: "x",
-            typeRawValues: [NSPasteboard.PasteboardType.string.rawValue],
-            thumbnailPNG: nil
+            typeRawValues: [NSPasteboard.PasteboardType.string.rawValue]
         )
     }
 

@@ -9,6 +9,8 @@ struct PdfCellView: View {
 
     @State private var thumbnail: NSImage?
 
+    private static let cache = NSCache<NSString, NSImage>()
+
     var body: some View {
         CellChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyPdfCellView) {
             HStack(spacing: 10) {
@@ -37,14 +39,26 @@ struct PdfCellView: View {
                 Spacer(minLength: 0)
             }
         }
-        .task(id: snapshot.id) { loadThumbnail() }
+        .task(id: snapshot.id) { await loadThumbnail() }
     }
 
-    private func loadThumbnail() {
-        guard let data = blobProvider(),
-              let pdf = PDFDocument(data: data),
-              let page = pdf.page(at: 0)
-        else { return }
-        thumbnail = page.thumbnail(of: NSSize(width: 96, height: 96), for: .mediaBox)
+    private func loadThumbnail() async {
+        let key = snapshot.id.uuidString as NSString
+        if let cached = Self.cache.object(forKey: key) {
+            thumbnail = cached
+            return
+        }
+        guard let data = blobProvider() else { return }
+        let decoded = await Task.detached(priority: .utility) { () -> NSImage? in
+            guard let pdf = PDFDocument(data: data),
+                  let page = pdf.page(at: 0)
+            else { return nil }
+            return page.thumbnail(of: NSSize(width: 96, height: 96), for: .mediaBox)
+        }.value
+        if Task.isCancelled { return }
+        thumbnail = decoded
+        if let decoded {
+            Self.cache.setObject(decoded, forKey: key)
+        }
     }
 }

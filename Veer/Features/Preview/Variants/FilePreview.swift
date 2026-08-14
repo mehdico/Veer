@@ -12,6 +12,16 @@ struct FilePreview: NSViewRepresentable {
     }
 
     func updateNSView(_ view: QLPreviewView, context: Context) {
+        guard url != context.coordinator.lastURL else { return }
+        context.coordinator.lastURL = url
         view.previewItem = url as (any QLPreviewItem)?
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    final class Coordinator {
+        var lastURL: URL?
     }
 }

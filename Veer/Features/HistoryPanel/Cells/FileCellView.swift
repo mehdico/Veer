@@ -11,6 +11,8 @@ struct FileCellView: View {
     @State private var icon: NSImage?
     @State private var thumbnail: NSImage?
 
+    private static let cache = NSCache<NSString, NSImage>()
+
     var body: some View {
         CellChrome(isSelected: isSelected, identifier: identifier) {
             HStack(spacing: 10) {
@@ -68,7 +70,17 @@ struct FileCellView: View {
         guard let url = parsed else { return }
         self.url = url
         icon = NSWorkspace.shared.icon(forFile: url.path)
-        thumbnail = await Self.makeThumbnail(for: url)
+        let key = "\(snapshot.id.uuidString)-36" as NSString
+        if let cached = Self.cache.object(forKey: key) {
+            thumbnail = cached
+            return
+        }
+        let generated = await Self.makeThumbnail(for: url)
+        if Task.isCancelled { return }
+        thumbnail = generated
+        if let generated {
+            Self.cache.setObject(generated, forKey: key)
+        }
     }
 
     private static func makeThumbnail(for url: URL) async -> NSImage? {

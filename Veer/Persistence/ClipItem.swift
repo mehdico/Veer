@@ -8,7 +8,7 @@ final class ClipItem {
     var sourceBundleId: String?
     var typeRawValues: [String]
     var preview: String?
-    var thumbnailPNG: Data?
+    @Attribute(.externalStorage) var thumbnailPNG: Data?
     var payloadDigest: Data
     @Relationship(deleteRule: .cascade, inverse: \PayloadBlob.item)
     var blobs: [PayloadBlob] = []

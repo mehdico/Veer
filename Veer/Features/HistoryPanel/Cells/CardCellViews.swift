@@ -74,6 +74,8 @@ struct RichTextCardView: View {
 
     @State private var attributed: AttributedString?
 
+    private static let cache = NSCache<NSString, NSAttributedString>()
+
     var body: some View {
         CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyRichTextCellView, sourceBundleId: snapshot.sourceBundleId) {
             if let attributed {
@@ -89,6 +91,11 @@ struct RichTextCardView: View {
     }
 
     private func loadRTF() {
+        let key = snapshot.id.uuidString as NSString
+        if let cached = Self.cache.object(forKey: key) {
+            attributed = AttributedString(cached)
+            return
+        }
         guard let data = blobProvider(),
               let ns = try? NSAttributedString(
                   data: data,
@@ -96,6 +103,7 @@ struct RichTextCardView: View {
                   documentAttributes: nil
               )
         else { return }
+        Self.cache.setObject(ns, forKey: key)
         attributed = AttributedString(ns)
     }
 }
@@ -103,12 +111,20 @@ struct RichTextCardView: View {
 struct ImageCardView: View {
     let snapshot: ClipItemSnapshot
     let isSelected: Bool
+    let viewModel: HistoryListViewModel
+
+    @State private var hasThumbnail = false
 
     var body: some View {
         CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyTiffCellView, sourceBundleId: snapshot.sourceBundleId) {
-            ClipThumbnailImage(pngData: snapshot.thumbnailPNG)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(snapshot.thumbnailPNG == nil ? 20 : 0)
+            ClipThumbnailImage(clipID: snapshot.id) {
+                viewModel.thumbnailPNG(for: snapshot.id)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(hasThumbnail ? 0 : 20)
+        }
+        .task(id: snapshot.id) {
+            hasThumbnail = viewModel.thumbnailPNG(for: snapshot.id) != nil
         }
     }
 }
@@ -155,6 +171,8 @@ struct PdfCardView: View {
 
     @State private var thumbnail: NSImage?
 
+    private static let cache = NSCache<NSString, NSImage>()
+
     var body: some View {
         CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyPdfCellView, sourceBundleId: snapshot.sourceBundleId) {
             VStack(spacing: 6) {
@@ -175,15 +193,27 @@ struct PdfCardView: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .task(id: snapshot.id) { loadThumbnail() }
+        .task(id: snapshot.id) { await loadThumbnail() }
     }
 
-    private func loadThumbnail() {
-        guard let data = blobProvider(),
-              let pdf = PDFDocument(data: data),
-              let page = pdf.page(at: 0)
-        else { return }
-        thumbnail = page.thumbnail(of: NSSize(width: 256, height: 256), for: .mediaBox)
+    private func loadThumbnail() async {
+        let key = snapshot.id.uuidString as NSString
+        if let cached = Self.cache.object(forKey: key) {
+            thumbnail = cached
+            return
+        }
+        guard let data = blobProvider() else { return }
+        let decoded = await Task.detached(priority: .utility) { () -> NSImage? in
+            guard let pdf = PDFDocument(data: data),
+                  let page = pdf.page(at: 0)
+            else { return nil }
+            return page.thumbnail(of: NSSize(width: 256, height: 256), for: .mediaBox)
+        }.value
+        if Task.isCancelled { return }
+        thumbnail = decoded
+        if let decoded {
+            Self.cache.setObject(decoded, forKey: key)
+        }
     }
 }
 
@@ -195,6 +225,8 @@ struct FileCardView: View {
     @State private var url: URL?
     @State private var icon: NSImage?
     @State private var thumbnail: NSImage?
+
+    private static let cache = NSCache<NSString, NSImage>()
 
     var body: some View {
         CardChrome(isSelected: isSelected, identifier: identifier, sourceBundleId: snapshot.sourceBundleId) {
@@ -247,7 +279,17 @@ struct FileCardView: View {
         guard let url = parsed else { return }
         self.url = url
         icon = NSWorkspace.shared.icon(forFile: url.path)
-        thumbnail = await Self.makeThumbnail(for: url, side: 192)
+        let key = "\(snapshot.id.uuidString)-192" as NSString
+        if let cached = Self.cache.object(forKey: key) {
+            thumbnail = cached
+            return
+        }
+        let generated = await Self.makeThumbnail(for: url, side: 192)
+        if Task.isCancelled { return }
+        thumbnail = generated
+        if let generated {
+            Self.cache.setObject(generated, forKey: key)
+        }
     }
 
     private static func makeThumbnail(for url: URL, side: CGFloat) async -> NSImage? {
@@ -273,7 +315,7 @@ func clipCardView(
 ) -> some View {
     switch snapshot.kind {
     case .image:
-        ImageCardView(snapshot: snapshot, isSelected: isSelected)
+        ImageCardView(snapshot: snapshot, isSelected: isSelected, viewModel: viewModel)
     case .pdf:
         PdfCardView(snapshot: snapshot, isSelected: isSelected, blobProvider: {
             viewModel.blob(for: snapshot.id, type: NSPasteboard.PasteboardType.pdf.rawValue)

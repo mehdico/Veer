@@ -5,8 +5,8 @@ import SwiftData
 final class ClipRepositoryLive: ClipRepository {
     private let context: ModelContext
     private(set) var maxItems: Int
-    private var changeContinuations: [UUID: AsyncStream<Void>.Continuation] = [:]
-    var changes: AsyncStream<Void> {
+    private var changeContinuations: [UUID: AsyncStream<RepositoryChange>.Continuation] = [:]
+    var changes: AsyncStream<RepositoryChange> {
         AsyncStream { continuation in
             let id = UUID()
             changeContinuations[id] = continuation
@@ -37,7 +37,8 @@ final class ClipRepositoryLive: ClipRepository {
         payload: ClipPayload,
         sourceBundleId: String?,
         thumbnailPNG: Data?,
-        payloadDigest: Data?
+        payloadDigest: Data?,
+        preview: String? = nil
     ) throws -> InsertOutcome {
         if payload.isEmpty {
             logger.info("insert rejected: empty payload (bundle=\(sourceBundleId ?? "nil"))")
@@ -48,16 +49,17 @@ final class ClipRepositoryLive: ClipRepository {
             return .rejectedDenyListed
         }
 
+        let preview = preview ?? payload.plainTextPreview()
         let digest = payloadDigest ?? payload.digest()
         if let mostRecent = try fetchMostRecent(), mostRecent.payloadDigest == digest {
-            logger.info("insert rejected: duplicate of most recent (preview=\(payload.plainTextPreview() ?? "<binary>"))")
+            logger.info("insert rejected: duplicate of most recent (preview=\(preview ?? "<binary>"))")
             return .rejectedDuplicate
         }
 
         let item = ClipItem(
             sourceBundleId: sourceBundleId,
             typeRawValues: payload.typed.keys.sorted(),
-            preview: payload.plainTextPreview(),
+            preview: preview,
             thumbnailPNG: thumbnailPNG,
             payloadDigest: digest
         )
@@ -68,7 +70,7 @@ final class ClipRepositoryLive: ClipRepository {
         try context.save()
 
         try enforceCap()
-        notify()
+        notify(.inserted(item.id))
         return .inserted(item.id)
     }
 
@@ -84,12 +86,30 @@ final class ClipRepositoryLive: ClipRepository {
         return try context.fetch(descriptor).first
     }
 
+    func fetchBlob(id: UUID, type: String) throws -> Data? {
+        var descriptor = FetchDescriptor<PayloadBlob>(
+            predicate: #Predicate { $0.typeRawValue == type && $0.item?.id == id }
+        )
+        descriptor.fetchLimit = 1
+        return try context.fetch(descriptor).first?.data
+    }
+
+    func fetchThumbnail(id: UUID) throws -> Data? {
+        var descriptor = FetchDescriptor<ClipItem>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        return try context.fetch(descriptor).first?.thumbnailPNG
+    }
+
+    func count() throws -> Int {
+        try context.fetchCount(FetchDescriptor<ClipItem>())
+    }
+
     func moveToFront(id: UUID) throws {
         let descriptor = FetchDescriptor<ClipItem>(predicate: #Predicate { $0.id == id })
         guard let item = try context.fetch(descriptor).first else { return }
         item.createdAt = Date()
         try context.save()
-        notify()
+        notify(.movedToFront(id))
     }
 
     func delete(id: UUID) throws {
@@ -97,21 +117,21 @@ final class ClipRepositoryLive: ClipRepository {
         if let item = try context.fetch(descriptor).first {
             context.delete(item)
             try context.save()
-            notify()
+            notify(.deleted(id))
         }
     }
 
     func clear() throws {
         try context.delete(model: ClipItem.self)
         try context.save()
-        notify()
+        notify(.cleared)
     }
 
     func setMaxItems(_ n: Int) throws {
         let clamped = max(1, min(n, Constants.History.absoluteMax))
         maxItems = clamped
         try enforceCap()
-        notify()
+        notify(.capped)
     }
 
     private func fetchMostRecent() throws -> ClipItem? {
@@ -131,7 +151,7 @@ final class ClipRepositoryLive: ClipRepository {
         try context.save()
     }
 
-    private func notify() {
-        for (_, c) in changeContinuations { c.yield(()) }
+    private func notify(_ change: RepositoryChange) {
+        for (_, c) in changeContinuations { c.yield(change) }
     }
 }

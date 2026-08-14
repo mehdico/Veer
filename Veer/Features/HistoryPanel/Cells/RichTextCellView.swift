@@ -8,6 +8,8 @@ struct RichTextCellView: View {
 
     @State private var attributed: AttributedString?
 
+    private static let cache = NSCache<NSString, NSAttributedString>()
+
     var body: some View {
         CellChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyRichTextCellView) {
             HStack(alignment: .top, spacing: 10) {
@@ -35,13 +37,19 @@ struct RichTextCellView: View {
     }
 
     private func loadAttributed() {
+        let key = snapshot.id.uuidString as NSString
+        if let cached = Self.cache.object(forKey: key) {
+            attributed = AttributedString(cached)
+            return
+        }
         guard let data = blobProvider(),
               let ns = try? NSAttributedString(
-                data: data,
-                options: [.documentType: NSAttributedString.DocumentType.rtf],
-                documentAttributes: nil
+                  data: data,
+                  options: [.documentType: NSAttributedString.DocumentType.rtf],
+                  documentAttributes: nil
               )
         else { return }
+        Self.cache.setObject(ns, forKey: key)
         attributed = AttributedString(ns)
     }
 }

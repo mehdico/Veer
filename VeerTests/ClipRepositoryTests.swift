@@ -111,7 +111,7 @@ struct ClipRepositoryTests {
         _ = await iterator.next() // consume insert notification
 
         try repo.moveToFront(id: id)
-        let change: Void? = await iterator.next()
+        let change: RepositoryChange? = await iterator.next()
         #expect(change != nil)
     }
 
@@ -183,21 +183,21 @@ struct ClipRepositoryTests {
         var iterator = repo.changes.makeAsyncIterator()
 
         _ = try repo.insert(payload: textPayload("a"), sourceBundleId: nil)
-        let first: Void? = await iterator.next()
+        let first: RepositoryChange? = await iterator.next()
         #expect(first != nil)
 
         guard case let .inserted(id) = try repo.insert(payload: textPayload("b"), sourceBundleId: nil) else {
             Issue.record("Insert failed"); return
         }
-        let second: Void? = await iterator.next()
+        let second: RepositoryChange? = await iterator.next()
         #expect(second != nil)
 
         try repo.delete(id: id)
-        let third: Void? = await iterator.next()
+        let third: RepositoryChange? = await iterator.next()
         #expect(third != nil)
 
         try repo.clear()
-        let fourth: Void? = await iterator.next()
+        let fourth: RepositoryChange? = await iterator.next()
         #expect(fourth != nil)
     }
 

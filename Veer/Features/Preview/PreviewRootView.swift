@@ -22,7 +22,7 @@ struct PreviewRootView: View {
     private func content(for snapshot: ClipItemSnapshot) -> some View {
         switch snapshot.kind {
         case .image:
-            ImagePreview(data: blobForImage(snapshot))
+            ImagePreview(clipID: snapshot.id, data: blobForImage(snapshot))
         case .pdf:
             PdfPreview(data: viewModel.blob(for: snapshot.id, type: NSPasteboard.PasteboardType.pdf.rawValue))
         case .color:

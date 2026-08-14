@@ -9,7 +9,7 @@ func clipCellView(
 ) -> some View {
     switch snapshot.kind {
     case .image:
-        ImageCellView(snapshot: snapshot, isSelected: isSelected)
+        ImageCellView(snapshot: snapshot, isSelected: isSelected, viewModel: viewModel)
     case .pdf:
         PdfCellView(snapshot: snapshot, isSelected: isSelected, blobProvider: {
             viewModel.blob(for: snapshot.id, type: NSPasteboard.PasteboardType.pdf.rawValue)

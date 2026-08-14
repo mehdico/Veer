@@ -7,6 +7,7 @@ final class PanelWindowController: NSWindowController, NSWindowDelegate {
     private let coordinator: PanelCoordinator
     private var lastSearchChromeHeight: CGFloat?
     private var wasPanelShown = false
+    private var resizePersistWork: DispatchWorkItem?
     private var outsideClickMonitor: Any?
     private var workspaceObserver: NSObjectProtocol?
 
@@ -128,15 +129,10 @@ final class PanelWindowController: NSWindowController, NSWindowDelegate {
 
     func windowDidResize(_ notification: Notification) {
         guard let window, coordinator.isShown else { return }
-        let base = coordinator.position.baseForSizing
-        var size = window.frame.size
-        size.height = max(0, size.height - coordinator.searchChromeHeight)
-        if let screenSize = window.screen?.frame.size ?? coordinator.currentScreen()?.frame.size {
-            env.settings.setPanelSize(size, for: base.rawValue, onScreenOfSize: screenSize)
-        }
-
         if coordinator.position.isCentered, let screen = window.screen ?? coordinator.currentScreen() {
             let chrome = coordinator.searchChromeHeight
+            var size = window.frame.size
+            size.height = max(0, size.height - chrome)
             let contentSize = NSSize(width: size.width, height: size.height)
             let totalSize = NSSize(width: contentSize.width, height: contentSize.height + chrome)
             let origin = NSPoint(
@@ -147,6 +143,23 @@ final class PanelWindowController: NSWindowController, NSWindowDelegate {
             if window.frame != target {
                 window.setFrame(target, display: true)
             }
+        }
+        // Persist on a debounce so live-resize doesn't JSON-encode and write defaults per tick.
+        resizePersistWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            self?.persistPanelSize()
+        }
+        resizePersistWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25, execute: work)
+    }
+
+    private func persistPanelSize() {
+        guard let window, coordinator.isShown else { return }
+        let base = coordinator.position.baseForSizing
+        var size = window.frame.size
+        size.height = max(0, size.height - coordinator.searchChromeHeight)
+        if let screenSize = window.screen?.frame.size ?? coordinator.currentScreen()?.frame.size {
+            env.settings.setPanelSize(size, for: base.rawValue, onScreenOfSize: screenSize)
         }
     }
 

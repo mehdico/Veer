@@ -2,11 +2,14 @@ import AppKit
 import SwiftUI
 
 struct ImagePreview: View {
+    let clipID: UUID
     let data: Data?
+
+    @State private var image: NSImage?
 
     var body: some View {
         Group {
-            if let data, let image = NSImage(data: data) {
+            if let image {
                 Image(nsImage: image)
                     .resizable()
                     .interpolation(.high)
@@ -18,5 +21,14 @@ struct ImagePreview: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
+        .task(id: clipID) {
+            if let data {
+                image = await Task.detached(priority: .utility) {
+                    NSImage(data: data)
+                }.value
+            } else {
+                image = nil
+            }
+        }
     }
 }

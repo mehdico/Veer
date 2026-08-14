@@ -67,14 +67,15 @@ final class ClipIngestor {
             return
         }
         let prepared = await Task.detached(priority: .utility) {
-            (payload.thumbnailPNG(), payload.digest())
+            (payload.thumbnailPNG(), payload.digest(), payload.plainTextPreview())
         }.value
         do {
             let outcome = try repository.insert(
                 payload: payload,
                 sourceBundleId: event.sourceBundleId,
                 thumbnailPNG: prepared.0,
-                payloadDigest: prepared.1
+                payloadDigest: prepared.1,
+                preview: prepared.2
             )
             logger.info("ingest outcome: \(String(describing: outcome)) bundle=\(event.sourceBundleId ?? "nil")")
         } catch {
