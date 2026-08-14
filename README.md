@@ -7,6 +7,7 @@ A native SwiftUI clipboard manager for macOS. Rewrite of [Yippy](../Yippy/) on a
 - Menu-bar resident, no dock icon (`LSUIElement`).
 - Global ⌘⇧V toggles a floating panel over any app.
 - Captures everything you copy (text, RTF, HTML, PNG, TIFF, PDF, file URLs, NSColor) with per-app source tracking.
+- Password managers and Keychain Access are ignored by default — a Settings → Ignored apps toggle, on by default, with per-app opt-outs.
 - Fuzzy search across history, live as you type.
 - Floating preview window (Spacebar) for full-fidelity text / image / color / PDF / file rendering.
 - 11 panel positions with `⌃⌥⌘ + arrow` shortcuts; vertical list + horizontal card strip layouts.

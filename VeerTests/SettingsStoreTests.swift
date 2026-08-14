@@ -16,7 +16,8 @@ struct SettingsStoreTests {
         #expect(store.pastesRichText == true)
         #expect(store.showAsCards == true)
         #expect(store.textOnlyHistory == false)
-        #expect(store.ignoredAppBundleIds.isEmpty)
+        #expect(store.ignoresPasswordManagers == true)
+        #expect(store.ignoredAppBundleIds == Constants.Privacy.defaultIgnoredApps.map(\.bundleId))
         #expect(store.panelSizeByPosition.isEmpty)
     }
 
@@ -84,21 +85,78 @@ struct SettingsStoreTests {
         #expect(store.pastesRichText == false)
         #expect(store.showAsCards == false)
         #expect(store.textOnlyHistory == false)
-        #expect(store.ignoredAppBundleIds.isEmpty)
+        #expect(store.ignoredAppBundleIds == Constants.Privacy.defaultIgnoredApps.map(\.bundleId))
     }
 
     @Test func ignoredAppsCanBeAddedRemovedAndPersist() {
         let defaults = makeDefaults()
+        let seeded = Constants.Privacy.defaultIgnoredApps.map(\.bundleId)
         let first = SettingsStore(defaults: defaults)
         first.addIgnoredApp("com.example.one")
         first.addIgnoredApp("com.example.two")
         first.addIgnoredApp("com.example.one") // duplicate is ignored
-        #expect(first.ignoredAppBundleIds == ["com.example.one", "com.example.two"])
+        #expect(first.ignoredAppBundleIds == seeded + ["com.example.one", "com.example.two"])
         first.removeIgnoredApp("com.example.one")
 
         let second = SettingsStore(defaults: defaults)
-        #expect(second.ignoredAppBundleIds == ["com.example.two"])
+        #expect(second.ignoredAppBundleIds == seeded + ["com.example.two"])
         second.addIgnoredApp("")
-        #expect(second.ignoredAppBundleIds == ["com.example.two"])
+        #expect(second.ignoredAppBundleIds == seeded + ["com.example.two"])
+    }
+
+    @Test func seededDefaultsAreNotReAddedAfterRemoval() {
+        let defaults = makeDefaults()
+        let seeded = Constants.Privacy.defaultIgnoredApps.map(\.bundleId)
+        let first = SettingsStore(defaults: defaults)
+        #expect(first.ignoredAppBundleIds == seeded)
+        first.removeIgnoredApp(seeded[0])
+
+        let second = SettingsStore(defaults: defaults)
+        #expect(second.ignoredAppBundleIds == Array(seeded.dropFirst()))
+    }
+
+    @Test func seedingMergesWithExistingCustomIgnores() {
+        let defaults = makeDefaults()
+        var legacy = VeerSettings()
+        legacy.ignoredAppBundleIds = ["com.example.custom"]
+        defaults.set(try! JSONEncoder().encode(legacy), forKey: SettingsStore.userDefaultsKey)
+
+        let store = SettingsStore(defaults: defaults)
+        let seeded = Constants.Privacy.defaultIgnoredApps.map(\.bundleId)
+        #expect(store.ignoredAppBundleIds == seeded + ["com.example.custom"])
+    }
+
+    @Test func seedingFlagSurvivesLaterSettingChanges() {
+        let defaults = makeDefaults()
+        let seeded = Constants.Privacy.defaultIgnoredApps.map(\.bundleId)
+        let first = SettingsStore(defaults: defaults)
+        first.removeIgnoredApp(seeded[0])
+        first.maxHistoryItems = 200 // persisting via snapshot must not reset the flag
+
+        let second = SettingsStore(defaults: defaults)
+        #expect(second.maxHistoryItems == 200)
+        #expect(second.ignoredAppBundleIds == Array(seeded.dropFirst()))
+    }
+
+    @Test func togglingPasswordManagersOffRemovesDefaultsAndPersists() {
+        let defaults = makeDefaults()
+        let first = SettingsStore(defaults: defaults)
+        first.addIgnoredApp("com.example.custom")
+        first.ignoresPasswordManagers = false
+        #expect(first.ignoredAppBundleIds == ["com.example.custom"])
+
+        let second = SettingsStore(defaults: defaults)
+        #expect(second.ignoresPasswordManagers == false)
+        #expect(second.ignoredAppBundleIds == ["com.example.custom"])
+    }
+
+    @Test func togglingPasswordManagersBackOnReAddsDefaults() {
+        let defaults = makeDefaults()
+        let seeded = Constants.Privacy.defaultIgnoredApps.map(\.bundleId)
+        let first = SettingsStore(defaults: defaults)
+        first.ignoresPasswordManagers = false
+        #expect(first.ignoredAppBundleIds.isEmpty)
+        first.ignoresPasswordManagers = true
+        #expect(first.ignoredAppBundleIds == seeded)
     }
 }

@@ -41,6 +41,34 @@ enum Constants {
         static let monitorSnapshotBackoffCapMilliseconds = 250
     }
 
+    enum Privacy {
+        struct DefaultIgnoredApp: Equatable, Sendable {
+            let bundleId: String
+            let name: String
+        }
+
+        /// Password managers and keychain apps seeded into the ignore list on first
+        /// launch. Seeding happens once; users can remove any entry in Settings and
+        /// removals are never re-added.
+        static let defaultIgnoredApps: [DefaultIgnoredApp] = [
+            DefaultIgnoredApp(bundleId: "com.apple.Passwords", name: "Passwords"),
+            DefaultIgnoredApp(bundleId: "com.apple.keychainaccess", name: "Keychain Access"),
+            DefaultIgnoredApp(bundleId: "com.1password.1password", name: "1Password"),
+            DefaultIgnoredApp(bundleId: "com.agilebits.onepassword7", name: "1Password 7"),
+            DefaultIgnoredApp(bundleId: "com.agilebits.onepassword", name: "1Password"),
+            DefaultIgnoredApp(bundleId: "com.bitwarden.desktop", name: "Bitwarden"),
+            DefaultIgnoredApp(bundleId: "com.lastpass.lastpassmacdesktop", name: "LastPass"),
+            DefaultIgnoredApp(bundleId: "com.dashlane.dashlanephonefinal", name: "Dashlane"),
+            DefaultIgnoredApp(bundleId: "org.keepassxc.keepassxc", name: "KeePassXC"),
+            DefaultIgnoredApp(bundleId: "net.antelle.keeweb", name: "KeeWeb"),
+            DefaultIgnoredApp(bundleId: "com.markmcguill.strongbox", name: "Strongbox"),
+            DefaultIgnoredApp(bundleId: "com.markmcguill.strongbox.mac", name: "Strongbox"),
+            DefaultIgnoredApp(bundleId: "com.callpod.keepermac.lite", name: "Keeper"),
+            DefaultIgnoredApp(bundleId: "com.outercorner.Secrets", name: "Secrets"),
+            DefaultIgnoredApp(bundleId: "me.proton.pass.electron", name: "Proton Pass"),
+        ]
+    }
+
     enum UI {
         static let windowCornerRadius: CGFloat = 16
         static let cardCornerRadius: CGFloat = 12

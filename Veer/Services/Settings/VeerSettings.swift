@@ -7,6 +7,8 @@ struct VeerSettings: Codable, Sendable, Equatable {
     var showAsCards: Bool = true
     var textOnlyHistory: Bool = false
     var ignoredAppBundleIds: [String] = []
+    var ignoresPasswordManagers: Bool = true
+    var didSeedDefaultIgnoredApps: Bool = false
     var panelSizeByPosition: [Int: PanelSize] = [:]
 }
 
@@ -18,6 +20,8 @@ extension VeerSettings {
         case showAsCards
         case textOnlyHistory
         case ignoredAppBundleIds
+        case ignoresPasswordManagers
+        case didSeedDefaultIgnoredApps
         case panelSizeByPosition
     }
 
@@ -32,7 +36,25 @@ extension VeerSettings {
         self.showAsCards = try container.decodeIfPresent(Bool.self, forKey: .showAsCards) ?? true
         self.textOnlyHistory = try container.decodeIfPresent(Bool.self, forKey: .textOnlyHistory) ?? false
         self.ignoredAppBundleIds = try container.decodeIfPresent([String].self, forKey: .ignoredAppBundleIds) ?? []
+        self.ignoresPasswordManagers = try container.decodeIfPresent(Bool.self, forKey: .ignoresPasswordManagers) ?? true
+        self.didSeedDefaultIgnoredApps = try container.decodeIfPresent(Bool.self, forKey: .didSeedDefaultIgnoredApps) ?? false
         self.panelSizeByPosition = try container.decodeIfPresent([Int: PanelSize].self, forKey: .panelSizeByPosition) ?? [:]
+    }
+}
+
+extension VeerSettings {
+    /// Applies the default ignored-apps policy once (on first launch or after an
+    /// upgrade): adds the defaults when `ignoresPasswordManagers` is on, removes
+    /// them when it is off. The persisted flag keeps later per-app removals from
+    /// being re-added on subsequent launches.
+    mutating func applyDefaultIgnoredAppsPolicy() {
+        let seeded = Constants.Privacy.defaultIgnoredApps.map(\.bundleId)
+        if ignoresPasswordManagers {
+            ignoredAppBundleIds = seeded + ignoredAppBundleIds.filter { !seeded.contains($0) }
+        } else {
+            ignoredAppBundleIds.removeAll { seeded.contains($0) }
+        }
+        didSeedDefaultIgnoredApps = true
     }
 }
 

@@ -81,6 +81,9 @@ struct GeneralTab: View {
     @ViewBuilder
     private var ignoredAppsSection: some View {
         Section {
+            Toggle("Ignore password managers", isOn: $settings.ignoresPasswordManagers)
+                .accessibilityIdentifier("settingsIgnorePasswordManagersToggle")
+
             if settings.ignoredAppBundleIds.isEmpty {
                 Text("No ignored apps — entries are recorded from every app.")
                     .foregroundStyle(.secondary)
@@ -112,7 +115,7 @@ struct GeneralTab: View {
         } header: {
             Text("Ignored apps")
         } footer: {
-            Text("Clips copied from ignored apps are not recorded.")
+            Text("Clips copied from ignored apps are not recorded. While the toggle is on, password managers and Keychain Access are ignored by default — remove any you want Veer to record.")
         }
     }
 
@@ -180,6 +183,9 @@ struct GeneralTab: View {
     }
 
     private static func displayName(for bundleId: String) -> String {
+        if let known = Constants.Privacy.defaultIgnoredApps.first(where: { $0.bundleId == bundleId }) {
+            return known.name
+        }
         if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId) {
             return url.deletingPathExtension().lastPathComponent
         }

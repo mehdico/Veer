@@ -12,13 +12,26 @@ final class SettingsStore {
     var showAsCards: Bool { didSet { persist() } }
     var textOnlyHistory: Bool { didSet { persist() } }
     private(set) var ignoredAppBundleIds: [String] { didSet { persist() } }
+    var ignoresPasswordManagers: Bool {
+        didSet {
+            applyIgnoredAppsPolicy()
+            persist()
+        }
+    }
     private(set) var panelSizeByPosition: [Int: PanelSize] { didSet { persist() } }
 
     @ObservationIgnored let defaults: UserDefaults
+    @ObservationIgnored private let didSeedDefaultIgnoredApps: Bool
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        let loaded = Self.load(from: defaults)
+        var loaded = Self.load(from: defaults)
+        if !loaded.didSeedDefaultIgnoredApps {
+            loaded.applyDefaultIgnoredAppsPolicy()
+            Self.persist(loaded, to: defaults)
+        }
+        self.ignoresPasswordManagers = loaded.ignoresPasswordManagers
+        self.didSeedDefaultIgnoredApps = loaded.didSeedDefaultIgnoredApps
         self.maxHistoryItems = loaded.maxHistoryItems
         self.showsRichText = loaded.showsRichText
         self.pastesRichText = loaded.pastesRichText
@@ -36,6 +49,8 @@ final class SettingsStore {
             showAsCards: showAsCards,
             textOnlyHistory: textOnlyHistory,
             ignoredAppBundleIds: ignoredAppBundleIds,
+            ignoresPasswordManagers: ignoresPasswordManagers,
+            didSeedDefaultIgnoredApps: didSeedDefaultIgnoredApps,
             panelSizeByPosition: panelSizeByPosition
         )
     }
@@ -47,6 +62,19 @@ final class SettingsStore {
 
     func removeIgnoredApp(_ bundleId: String) {
         ignoredAppBundleIds.removeAll { $0 == bundleId }
+    }
+
+    private func applyIgnoredAppsPolicy() {
+        let seeded = Constants.Privacy.defaultIgnoredApps.map(\.bundleId)
+        if ignoresPasswordManagers {
+            var next = seeded
+            for id in ignoredAppBundleIds where !next.contains(id) {
+                next.append(id)
+            }
+            ignoredAppBundleIds = next
+        } else {
+            ignoredAppBundleIds.removeAll { seeded.contains($0) }
+        }
     }
 
     func panelSize(for positionRawValue: Int, matchingScreenSize screenSize: CGSize) -> CGSize? {
@@ -78,8 +106,12 @@ final class SettingsStore {
     }
 
     private func persist() {
-        if let data = try? JSONEncoder().encode(snapshot) {
-            defaults.set(data, forKey: Self.userDefaultsKey)
+        Self.persist(snapshot, to: defaults)
+    }
+
+    private static func persist(_ settings: VeerSettings, to defaults: UserDefaults) {
+        if let data = try? JSONEncoder().encode(settings) {
+            defaults.set(data, forKey: userDefaultsKey)
         }
     }
 }
