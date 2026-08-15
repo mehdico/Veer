@@ -23,6 +23,8 @@ final class HistoryListViewModel {
     private(set) var filteredIDs: [UUID] = []
     private(set) var filteredItems: [ClipItemSnapshot] = []
 
+    @ObservationIgnored private var highlightsByID: [UUID: [Range<String.Index>]] = [:]
+
     /// Whether on-card content previews (image/PDF/file thumbnails, color
     /// swatches) are enabled. Off → icons and labels only.
     var previewsEnabled: Bool { settings?.showPreviews ?? true }
@@ -376,13 +378,29 @@ final class HistoryListViewModel {
         "\(id.uuidString)|\(type)" as NSString
     }
 
+    /// Character ranges of the search query inside a clip's preview, for
+    /// highlighting why it matched. Empty while the search is empty.
+    func highlights(for snapshot: ClipItemSnapshot) -> [Range<String.Index>] {
+        searchText.isEmpty ? [] : (highlightsByID[snapshot.id] ?? [])
+    }
+
     private func runSearch() {
         if searchText.isEmpty {
             filteredItems = items
+            highlightsByID = [:]
         } else {
+            let query = searchText
             let candidates = items.map { SearchCandidate(id: $0.id, text: $0.preview ?? "") }
-            let ids = searchEngine.search(query: searchText, in: candidates)
+            let ids = searchEngine.search(query: query, in: candidates)
             filteredItems = ids.compactMap { itemsByID[$0] }
+            var highlights: [UUID: [Range<String.Index>]] = [:]
+            for snapshot in filteredItems {
+                let ranges = searchEngine.highlightRanges(query: query, in: snapshot.preview ?? "")
+                if !ranges.isEmpty {
+                    highlights[snapshot.id] = ranges
+                }
+            }
+            highlightsByID = highlights
         }
         filteredIDs = filteredItems.map(\.id)
         selectedIndex = 0

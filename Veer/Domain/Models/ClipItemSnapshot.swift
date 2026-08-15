@@ -23,6 +23,13 @@ struct ClipItemSnapshot: Identifiable, Hashable, Sendable {
 }
 
 extension ClipItemSnapshot {
+    /// Compact relative age ("just now", "5m ago", …) for cell metadata lines.
+    var relativeTimeLabel: String {
+        RelativeTime.label(for: createdAt)
+    }
+}
+
+extension ClipItemSnapshot {
     init(_ item: ClipItem) {
         self.init(
             id: item.id,

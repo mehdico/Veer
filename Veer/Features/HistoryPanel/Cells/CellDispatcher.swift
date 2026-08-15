@@ -26,11 +26,20 @@ func clipCellView(
                 viewModel.blob(for: snapshot.id, type: NSPasteboard.PasteboardType.fileURL.rawValue)
             })
         case .richText:
-            RichTextCellView(snapshot: snapshot, isSelected: isSelected, blobProvider: {
-                viewModel.blob(for: snapshot.id, type: NSPasteboard.PasteboardType.rtf.rawValue)
-            })
+            RichTextCellView(
+                snapshot: snapshot,
+                isSelected: isSelected,
+                blobProvider: {
+                    viewModel.blob(for: snapshot.id, type: NSPasteboard.PasteboardType.rtf.rawValue)
+                },
+                highlightRanges: viewModel.highlights(for: snapshot)
+            )
         case .text:
-            TextCellView(snapshot: snapshot, isSelected: isSelected)
+            TextCellView(
+                snapshot: snapshot,
+                isSelected: isSelected,
+                highlightRanges: viewModel.highlights(for: snapshot)
+            )
         }
     }
 }

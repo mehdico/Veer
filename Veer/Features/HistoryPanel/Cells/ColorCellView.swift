@@ -34,11 +34,7 @@ struct ColorCellView: View {
                               ? .system(.body, design: .monospaced)
                               : .system(size: 13, weight: .medium))
                         .lineLimit(1)
-                    if let bundle = snapshot.sourceBundleId {
-                        Text(bundle)
-                            .font(.system(size: 10))
-                            .foregroundStyle(.secondary)
-                    }
+                    metadataLine
                 }
                 Spacer(minLength: 0)
             }
@@ -47,6 +43,17 @@ struct ColorCellView: View {
             guard previewsEnabled else { return }
             loadColor()
         }
+    }
+
+    private var metadataLine: some View {
+        HStack(spacing: 6) {
+            if let bundle = snapshot.sourceBundleId {
+                Text(bundle)
+            }
+            Text(snapshot.relativeTimeLabel)
+        }
+        .font(.system(size: 10))
+        .foregroundStyle(.secondary)
     }
 
     /// Swatch with a visible edge (and a checkerboard behind translucent

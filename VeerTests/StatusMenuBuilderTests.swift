@@ -71,16 +71,17 @@ struct StatusMenuBuilderTests {
         #expect(tags == PanelPosition.menuOrder.map(\.rawValue))
     }
 
-    @Test func toggleWindowKeyEquivalent() {
+    @Test func toggleWindowKeyEquivalentShowsGlobalHotkey() {
         let menu = StatusMenuBuilder.build(target: StubActions())
         let toggle = menu.item(withTitle: "Show Veer")
         #expect(toggle?.keyEquivalent == "V")
+        #expect(toggle?.keyEquivalentModifierMask == [.command, .shift])
     }
 
-    @Test func deleteSelectedIsDisabledByDefaultWithControlModifier() {
+    @Test func deleteSelectedCarriesControlModifier() {
         let menu = StatusMenuBuilder.build(target: StubActions())
         let delete = menu.item(withTitle: "Delete clip")
-        #expect(delete?.isEnabled == false)
+        #expect(delete?.isEnabled == true)
         #expect(delete?.keyEquivalentModifierMask == .control)
     }
 

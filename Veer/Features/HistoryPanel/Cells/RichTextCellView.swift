@@ -5,6 +5,9 @@ struct RichTextCellView: View {
     let snapshot: ClipItemSnapshot
     let isSelected: Bool
     let blobProvider: () -> Data?
+    /// Search highlight ranges for the plain-text fallback only (attributed
+    /// RTF has its own character layout, so it is left unhighlighted).
+    var highlightRanges: [Range<String.Index>] = []
 
     @State private var attributed: AttributedString?
 
@@ -21,19 +24,32 @@ struct RichTextCellView: View {
                         Text(attributed)
                             .lineLimit(3)
                     } else {
-                        Text(snapshot.preview ?? "")
+                        previewText
                             .lineLimit(3)
                     }
-                    if let bundle = snapshot.sourceBundleId {
-                        Text(bundle)
-                            .font(.system(size: 10))
-                            .foregroundStyle(.secondary)
-                    }
+                    metadataLine
                 }
                 Spacer(minLength: 0)
             }
         }
         .task(id: snapshot.id) { loadAttributed() }
+    }
+
+    private var previewText: Text {
+        let text = snapshot.preview ?? ""
+        guard !highlightRanges.isEmpty else { return Text(text) }
+        return Text(AttributedString.highlighted(text, ranges: highlightRanges))
+    }
+
+    private var metadataLine: some View {
+        HStack(spacing: 6) {
+            if let bundle = snapshot.sourceBundleId {
+                Text(bundle)
+            }
+            Text(snapshot.relativeTimeLabel)
+        }
+        .font(.system(size: 10))
+        .foregroundStyle(.secondary)
     }
 
     private func loadAttributed() {

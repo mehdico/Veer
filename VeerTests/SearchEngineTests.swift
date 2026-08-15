@@ -71,4 +71,33 @@ struct SearchEngineTests {
         let result = engine.search(query: "fbz", in: candidates)
         #expect(result.first == ids[1])
     }
+
+    @Test func highlightRangesEmptyQueryReturnsNothing() {
+        #expect(engine.highlightRanges(query: "", in: "hello").isEmpty)
+        #expect(engine.highlightRanges(query: "   ", in: "hello").isEmpty)
+    }
+
+    @Test func highlightRangesNoMatchReturnsNothing() {
+        #expect(engine.highlightRanges(query: "zzz", in: "foobarbaz").isEmpty)
+    }
+
+    @Test func highlightRangesContiguousMatchCoversMatch() {
+        let text = "Hello World"
+        let ranges = engine.highlightRanges(query: "world", in: text)
+        #expect(ranges == [text.range(of: "World")!])
+    }
+
+    @Test func highlightRangesContiguousMatchIsCaseInsensitive() {
+        let text = "Hello World"
+        let ranges = engine.highlightRanges(query: "WORLD", in: text)
+        #expect(ranges == [text.range(of: "World")!])
+    }
+
+    @Test func highlightRangesSubsequenceSpansFirstToLastMatch() {
+        let text = "foobarbaz"
+        let ranges = engine.highlightRanges(query: "fbz", in: text)
+        #expect(ranges.count == 1)
+        let end = text.index(text.startIndex, offsetBy: 9)
+        #expect(ranges[0] == text.startIndex..<end)
+    }
 }

@@ -6,14 +6,17 @@ enum StatusMenuBuilder {
         let menu = NSMenu()
         menu.autoenablesItems = false
 
-        menu.addItem(makeItem(
+        let toggleItem = makeItem(
             symbol: "rectangle.portrait.on.rectangle.portrait",
             title: "Show Veer",
             action: #selector(StatusMenuActions.togglePanel(_:)),
             keyEquivalent: "V",
             identifier: AccessibilityIdentifiers.toggleWindowButton,
             target: target
-        ))
+        )
+        // Display the real global hotkey (⌘⇧V) next to the item.
+        toggleItem.keyEquivalentModifierMask = [.command, .shift]
+        menu.addItem(toggleItem)
 
         let positionItem = makeItem(
             symbol: "rectangle.3.group",
@@ -36,7 +39,9 @@ enum StatusMenuBuilder {
             target: target
         )
         deleteItem.keyEquivalentModifierMask = .control
-        deleteItem.isEnabled = false
+        // Enabled live while the panel is open (StatusBarController updates it
+        // in menuWillOpen); deleting with the panel hidden would target an
+        // invisible clip.
         menu.addItem(deleteItem)
 
         menu.addItem(makeItem(

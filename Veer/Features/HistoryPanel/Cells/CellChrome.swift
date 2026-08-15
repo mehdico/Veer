@@ -11,11 +11,19 @@ struct CellChrome<Content: View>: View {
             .padding(.horizontal, 10)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                ZStack {
+                ZStack(alignment: .leading) {
                     if isSelected {
-                        Color.accentColor.opacity(0.2)
                         RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.accentColor.opacity(0.5), lineWidth: 1)
+                            .fill(Color.accentColor.opacity(0.22))
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.accentColor, lineWidth: 2)
+                        // Solid leading bar so the selected row stays visible
+                        // even with low-contrast system accent colors.
+                        Capsule()
+                            .fill(Color.accentColor)
+                            .frame(width: 4)
+                            .padding(.vertical, 4)
+                            .padding(.leading, 2)
                     }
                 }
             )

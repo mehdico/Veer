@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 @MainActor
-final class StatusBarController: NSObject, StatusMenuActions {
+final class StatusBarController: NSObject, StatusMenuActions, NSMenuDelegate {
     private let env: AppEnvironment
     private let statusItem: NSStatusItem
     private var debugObserverTask: Task<Void, Never>?
@@ -16,6 +16,7 @@ final class StatusBarController: NSObject, StatusMenuActions {
         super.init()
         configureButton()
         statusItem.menu = StatusMenuBuilder.build(target: self)
+        statusItem.menu?.delegate = self
         syncLaunchAtLoginCheckmark()
         #if DEBUG
         observeRepositoryForDebugCount()
@@ -24,6 +25,23 @@ final class StatusBarController: NSObject, StatusMenuActions {
 
     deinit {
         debugObserverTask?.cancel()
+    }
+
+    /// Keeps state-dependent items honest right before the menu opens.
+    func menuWillOpen(_ menu: NSMenu) {
+        syncLaunchAtLoginCheckmark()
+        guard let menu = statusItem.menu else { return }
+        let panelShown = env.panel.isShown
+        if let toggle = menu.items.first(where: {
+            $0.accessibilityIdentifier() == AccessibilityIdentifiers.toggleWindowButton
+        }) {
+            toggle.title = panelShown ? "Hide Veer" : "Show Veer"
+        }
+        if let delete = menu.items.first(where: {
+            $0.accessibilityIdentifier() == AccessibilityIdentifiers.deleteSelectedButton
+        }) {
+            delete.isEnabled = panelShown
+        }
     }
 
     private func configureButton() {
@@ -113,6 +131,13 @@ final class StatusBarController: NSObject, StatusMenuActions {
     }
 
     func clearHistory(_ sender: Any?) {
+        let confirmed = env.alerter.presentConfirmation(
+            message: "Clear history?",
+            informativeText: "This removes every clip from your history. This can't be undone.",
+            confirmTitle: "Clear History",
+            cancelTitle: "Cancel"
+        )
+        guard confirmed else { return }
         try? env.repository.clear()
     }
 

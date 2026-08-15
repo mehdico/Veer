@@ -27,13 +27,16 @@ struct FileCellView: View {
                         .font(.system(size: 13, weight: .medium))
                         .lineLimit(1)
                         .truncationMode(.middle)
-                    Text(fileMissing
-                         ? "File unavailable"
-                         : (url?.deletingLastPathComponent().path ?? ""))
-                        .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.head)
+                    HStack(spacing: 6) {
+                        Text(fileMissing
+                             ? "File unavailable"
+                             : (url?.deletingLastPathComponent().path ?? ""))
+                            .lineLimit(1)
+                            .truncationMode(.head)
+                        Text(snapshot.relativeTimeLabel)
+                    }
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
             }

@@ -7,6 +7,7 @@ private struct CardChrome<Content: View>: View {
     let isSelected: Bool
     let identifier: String
     let sourceBundleId: String?
+    let timeLabel: String
     @ViewBuilder let content: () -> Content
 
     var body: some View {
@@ -17,6 +18,11 @@ private struct CardChrome<Content: View>: View {
             }
             content()
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            Text(timeLabel)
+                .font(.system(size: 9))
+                .foregroundStyle(.tertiary)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .padding(.top, 4)
         }
         .padding(10)
         .background(.ultraThinMaterial)
@@ -57,13 +63,26 @@ private struct CardChrome<Content: View>: View {
 struct TextCardView: View {
     let snapshot: ClipItemSnapshot
     let isSelected: Bool
+    /// Search highlight ranges inside the preview.
+    var highlightRanges: [Range<String.Index>] = []
 
     var body: some View {
-        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyTextCellView, sourceBundleId: snapshot.sourceBundleId) {
-            Text(snapshot.preview ?? "(no preview)")
+        CardChrome(
+            isSelected: isSelected,
+            identifier: AccessibilityIdentifiers.yippyTextCellView,
+            sourceBundleId: snapshot.sourceBundleId,
+            timeLabel: snapshot.relativeTimeLabel
+        ) {
+            previewText
                 .font(.system(size: 14))
                 .lineLimit(nil)
         }
+    }
+
+    private var previewText: Text {
+        let text = snapshot.preview ?? "(no preview)"
+        guard !highlightRanges.isEmpty else { return Text(text) }
+        return Text(AttributedString.highlighted(text, ranges: highlightRanges))
     }
 }
 
@@ -71,23 +90,37 @@ struct RichTextCardView: View {
     let snapshot: ClipItemSnapshot
     let isSelected: Bool
     let blobProvider: () -> Data?
+    /// Search highlight ranges for the plain-text fallback only (attributed
+    /// RTF has its own character layout, so it is left unhighlighted).
+    var highlightRanges: [Range<String.Index>] = []
 
     @State private var attributed: AttributedString?
 
     private static let cache = NSCache<NSString, NSAttributedString>()
 
     var body: some View {
-        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyRichTextCellView, sourceBundleId: snapshot.sourceBundleId) {
+        CardChrome(
+            isSelected: isSelected,
+            identifier: AccessibilityIdentifiers.yippyRichTextCellView,
+            sourceBundleId: snapshot.sourceBundleId,
+            timeLabel: snapshot.relativeTimeLabel
+        ) {
             if let attributed {
                 Text(attributed)
                     .lineLimit(nil)
             } else {
-                Text(snapshot.preview ?? "")
+                previewText
                     .font(.system(size: 14))
                     .lineLimit(nil)
             }
         }
         .task(id: snapshot.id) { loadRTF() }
+    }
+
+    private var previewText: Text {
+        let text = snapshot.preview ?? ""
+        guard !highlightRanges.isEmpty else { return Text(text) }
+        return Text(AttributedString.highlighted(text, ranges: highlightRanges))
     }
 
     private func loadRTF() {
@@ -116,7 +149,7 @@ struct ImageCardView: View {
     @State private var hasThumbnail = false
 
     var body: some View {
-        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyTiffCellView, sourceBundleId: snapshot.sourceBundleId) {
+        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyTiffCellView, sourceBundleId: snapshot.sourceBundleId, timeLabel: snapshot.relativeTimeLabel) {
             if viewModel.previewsEnabled {
                 ClipThumbnailImage(clipID: snapshot.id) {
                     viewModel.thumbnailPNG(for: snapshot.id)
@@ -155,7 +188,7 @@ struct ColorCardView: View {
     @State private var loaded = false
 
     var body: some View {
-        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyColorCellView, sourceBundleId: snapshot.sourceBundleId) {
+        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyColorCellView, sourceBundleId: snapshot.sourceBundleId, timeLabel: snapshot.relativeTimeLabel) {
             if previewsEnabled {
                 ZStack(alignment: .bottomLeading) {
                     swatch
@@ -261,7 +294,7 @@ struct PdfCardView: View {
     private static let cache = NSCache<NSString, NSImage>()
 
     var body: some View {
-        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyPdfCellView, sourceBundleId: snapshot.sourceBundleId) {
+        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyPdfCellView, sourceBundleId: snapshot.sourceBundleId, timeLabel: snapshot.relativeTimeLabel) {
             VStack(spacing: 6) {
                 if let thumbnail {
                     Image(nsImage: thumbnail)
@@ -325,7 +358,7 @@ struct FileCardView: View {
     private static let cache = NSCache<NSString, NSImage>()
 
     var body: some View {
-        CardChrome(isSelected: isSelected, identifier: identifier, sourceBundleId: snapshot.sourceBundleId) {
+        CardChrome(isSelected: isSelected, identifier: identifier, sourceBundleId: snapshot.sourceBundleId, timeLabel: snapshot.relativeTimeLabel) {
             VStack(spacing: 6) {
                 ZStack(alignment: .bottomTrailing) {
                     imageView
@@ -457,11 +490,20 @@ func clipCardView(
                 viewModel.blob(for: snapshot.id, type: NSPasteboard.PasteboardType.fileURL.rawValue)
             })
         case .richText:
-            RichTextCardView(snapshot: snapshot, isSelected: isSelected, blobProvider: {
-                viewModel.blob(for: snapshot.id, type: NSPasteboard.PasteboardType.rtf.rawValue)
-            })
+            RichTextCardView(
+                snapshot: snapshot,
+                isSelected: isSelected,
+                blobProvider: {
+                    viewModel.blob(for: snapshot.id, type: NSPasteboard.PasteboardType.rtf.rawValue)
+                },
+                highlightRanges: viewModel.highlights(for: snapshot)
+            )
         case .text:
-            TextCardView(snapshot: snapshot, isSelected: isSelected)
+            TextCardView(
+                snapshot: snapshot,
+                isSelected: isSelected,
+                highlightRanges: viewModel.highlights(for: snapshot)
+            )
         }
     }
 }

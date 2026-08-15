@@ -10,6 +10,7 @@ struct HistoryRootView: View {
     }
 
     @State private var isVisible = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Group {
@@ -39,8 +40,12 @@ struct HistoryRootView: View {
             if coordinator.isShown {
                 env.historyViewModel.start()
             }
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.7, blendDuration: 0)) {
+            if reduceMotion {
                 isVisible = true
+            } else {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.7, blendDuration: 0)) {
+                    isVisible = true
+                }
             }
         }
         .onDisappear {

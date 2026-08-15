@@ -5,6 +5,7 @@ struct HistoryCardStripView: View {
     @Bindable var coordinator: PanelCoordinator
     @FocusState private var focused: Bool
     @State private var firstVisibleID: UUID?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: 0) {
@@ -44,7 +45,10 @@ struct HistoryCardStripView: View {
                 cardStack(isVertical: isVertical, side: side)
                     .padding(isVertical ? .horizontal : .vertical, padding / 2)
                     .scrollTargetLayout()
-                    .animation(viewModel.searchText.isEmpty ? nil : .spring(response: 0.35, dampingFraction: 0.8), value: viewModel.filteredIDs)
+                    .animation(
+                        viewModel.searchText.isEmpty || reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.8),
+                        value: viewModel.filteredIDs
+                    )
             }
             .contentMargins(isVertical ? .vertical : .horizontal, 6, for: .scrollContent)
             .scrollTargetBehavior(.viewAligned)
@@ -83,8 +87,8 @@ struct HistoryCardStripView: View {
                 }
             }
             .onChange(of: viewModel.searchText) { _, newValue in
-                if newValue.isEmpty {
-                    // Reset scroll instantly when clearing to prevent jumping
+                if newValue.isEmpty || reduceMotion {
+                    // Reset scroll instantly to prevent jumping
                     firstVisibleID = viewModel.filteredItems.first?.id
                 } else {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
@@ -108,10 +112,7 @@ struct HistoryCardStripView: View {
     private func cardItems(side: CGFloat) -> some View {
         let items = viewModel.filteredItems
         if items.isEmpty {
-            Text(viewModel.searchText.isEmpty ? "No clips yet" : "No matches")
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 24)
-                .frame(width: side, height: side)
+            cardEmptyState(side: side)
         } else {
             ForEach(Array(items.enumerated()), id: \.element.id) { index, snapshot in
                 cardCell(index: index, snapshot: snapshot, side: side)
@@ -170,5 +171,22 @@ struct HistoryCardStripView: View {
             .clipShape(Capsule())
             .padding(8)
             .accessibilityIdentifier("cardShortcut_\(number)")
+    }
+
+    private func cardEmptyState(side: CGFloat) -> some View {
+        let searching = !viewModel.searchText.isEmpty
+        return VStack(spacing: 6) {
+            Text(searching ? "No matches" : "Nothing copied yet")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.secondary)
+            Text(searching
+                 ? "Press Esc to clear the search."
+                 : "Copy text or images in any app and they'll appear here.")
+                .font(.system(size: 11))
+                .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
+        }
+        .padding(.horizontal, 24)
+        .frame(width: side, height: side)
     }
 }

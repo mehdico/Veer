@@ -4,6 +4,7 @@ struct HistoryListView: View {
     @Bindable var viewModel: HistoryListViewModel
     @Bindable var coordinator: PanelCoordinator
     @FocusState private var focused: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: 0) {
@@ -34,9 +35,7 @@ struct HistoryListView: View {
                 LazyVStack(spacing: 2) {
                     let items = viewModel.filteredItems
                     if items.isEmpty {
-                        Text(viewModel.searchText.isEmpty ? "No clips yet" : "No matches")
-                            .foregroundStyle(.secondary)
-                            .padding(.vertical, 24)
+                        emptyState
                     } else {
                         ForEach(Array(items.enumerated()), id: \.element.id) { index, snapshot in
                             let isSelected = index == viewModel.selectedIndex
@@ -75,7 +74,10 @@ struct HistoryListView: View {
                 }
                 .padding(.horizontal, 4)
                 .padding(.vertical, 4)
-                .animation(viewModel.searchText.isEmpty ? nil : .spring(response: 0.35, dampingFraction: 0.8), value: viewModel.filteredIDs)
+                .animation(
+                    viewModel.searchText.isEmpty || reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.8),
+                    value: viewModel.filteredIDs
+                )
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.yippyTableView)
             .onChange(of: viewModel.selectedIndex) { _, newIndex in
@@ -89,7 +91,7 @@ struct HistoryListView: View {
             }
             .onChange(of: viewModel.searchText) { _, newValue in
                 if let firstID = viewModel.filteredItems.first?.id {
-                    if newValue.isEmpty {
+                    if newValue.isEmpty || reduceMotion {
                         proxy.scrollTo(firstID, anchor: .top)
                     } else {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
@@ -104,5 +106,23 @@ struct HistoryListView: View {
                 }
             }
         }
+    }
+
+    private var emptyState: some View {
+        let searching = !viewModel.searchText.isEmpty
+        return VStack(spacing: 6) {
+            Text(searching ? "No matches" : "Nothing copied yet")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.secondary)
+            Text(searching
+                 ? "Press Esc to clear the search."
+                 : "Copy text or images in any app and they'll appear here.")
+                .font(.system(size: 11))
+                .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 24)
     }
 }

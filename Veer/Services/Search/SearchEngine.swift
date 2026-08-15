@@ -15,4 +15,11 @@ struct SearchCandidate: Sendable, Equatable {
 
 protocol SearchEngine: Sendable {
     func search(query: String, in candidates: [SearchCandidate]) -> [UUID]
+    /// Character ranges in `text` that matched `query`, for highlighting
+    /// matches in result cells. Empty when nothing matched.
+    func highlightRanges(query: String, in text: String) -> [Range<String.Index>]
+}
+
+extension SearchEngine {
+    func highlightRanges(query: String, in text: String) -> [Range<String.Index>] { [] }
 }

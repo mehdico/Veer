@@ -25,14 +25,21 @@ struct ImageCellView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Image")
                         .font(.system(size: 13, weight: .medium))
-                    if let bundle = snapshot.sourceBundleId {
-                        Text(bundle)
-                            .font(.system(size: 10))
-                            .foregroundStyle(.secondary)
-                    }
+                    metadataLine
                 }
                 Spacer(minLength: 0)
             }
         }
+    }
+
+    private var metadataLine: some View {
+        HStack(spacing: 6) {
+            if let bundle = snapshot.sourceBundleId {
+                Text(bundle)
+            }
+            Text(snapshot.relativeTimeLabel)
+        }
+        .font(.system(size: 10))
+        .foregroundStyle(.secondary)
     }
 }

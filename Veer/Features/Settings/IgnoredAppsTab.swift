@@ -43,7 +43,10 @@ struct IgnoredAppsTab: View {
                                     settings.removeIgnoredApp(bundleId)
                                 } label: {
                                     Image(systemName: "minus.circle.fill")
+                                        .font(.system(size: 15))
                                         .foregroundStyle(.red)
+                                        .frame(width: 24, height: 24)
+                                        .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityIdentifier("settingsRemoveIgnoredApp_\(bundleId)")
