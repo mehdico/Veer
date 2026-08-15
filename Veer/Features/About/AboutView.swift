@@ -28,9 +28,12 @@ struct AboutView: View {
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
                 .padding(.top, 4)
+            Text("Veer is a Persian word meaning memory, understanding, and mind.")
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
         }
         .padding(32)
-        .frame(width: 360, height: 320)
+        .frame(width: 360, height: 380)
         .accessibilityIdentifier(AccessibilityIdentifiers.aboutWindow)
     }
 }
