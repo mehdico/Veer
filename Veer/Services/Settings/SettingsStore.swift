@@ -10,6 +10,7 @@ final class SettingsStore {
     var showsRichText: Bool { didSet { persist() } }
     var pastesRichText: Bool { didSet { persist() } }
     var showAsCards: Bool { didSet { persist() } }
+    var showPreviews: Bool { didSet { persist() } }
     var textOnlyHistory: Bool { didSet { persist() } }
     private(set) var ignoredAppBundleIds: [String] { didSet { persist() } }
     var ignoresPasswordManagers: Bool {
@@ -36,6 +37,7 @@ final class SettingsStore {
         self.showsRichText = loaded.showsRichText
         self.pastesRichText = loaded.pastesRichText
         self.showAsCards = loaded.showAsCards
+        self.showPreviews = loaded.showPreviews
         self.textOnlyHistory = loaded.textOnlyHistory
         self.ignoredAppBundleIds = loaded.ignoredAppBundleIds
         self.panelSizeByPosition = loaded.panelSizeByPosition
@@ -47,6 +49,7 @@ final class SettingsStore {
             showsRichText: showsRichText,
             pastesRichText: pastesRichText,
             showAsCards: showAsCards,
+            showPreviews: showPreviews,
             textOnlyHistory: textOnlyHistory,
             ignoredAppBundleIds: ignoredAppBundleIds,
             ignoresPasswordManagers: ignoresPasswordManagers,

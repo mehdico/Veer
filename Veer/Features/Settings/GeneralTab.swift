@@ -32,11 +32,17 @@ struct GeneralTab: View {
                     Text("All files are skipped when on — even text files. Only text in any format (plain, rich, HTML) is saved.")
                 }
 
-                Section("Appearance") {
+                Section {
                     Toggle("Show formatted text in clips", isOn: $settings.showsRichText)
                         .accessibilityIdentifier("settingsShowsRichTextToggle")
                     Toggle("Show clips as cards", isOn: $settings.showAsCards)
                         .accessibilityIdentifier("settingsHorizontalToggle")
+                    Toggle("Show previews in clips", isOn: $settings.showPreviews)
+                        .accessibilityIdentifier("settingsShowPreviewsToggle")
+                } header: {
+                    Text("Appearance")
+                } footer: {
+                    Text("Content previews — image, PDF and file thumbnails, and color swatches. When off, clips show icons and labels instead.")
                 }
 
                 Section("Pasting") {

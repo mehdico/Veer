@@ -25,6 +25,17 @@ extension ClipItemSnapshot {
     }
 }
 
+extension ClipItemSnapshot {
+    /// The trimmed text when this clip is exactly a hex color (3, 6 or 8
+    /// digits, optional leading `#`) — the common shape of colors copied from
+    /// browsers and design tools, which arrive as plain text, not NSColor data.
+    var colorHexText: String? {
+        guard kind == .text, let preview else { return nil }
+        let trimmed = preview.trimmingCharacters(in: .whitespacesAndNewlines)
+        return ClipContentDetector.detectHex(in: trimmed) != nil ? trimmed : nil
+    }
+}
+
 extension ClipPayload {
     /// True when the payload carries only text in any format (plain, rich, HTML,
     /// RTFD, URL, …) and no file reference, image, PDF or color data.

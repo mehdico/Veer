@@ -5,6 +5,7 @@ struct VeerSettings: Codable, Sendable, Equatable {
     var showsRichText: Bool = true
     var pastesRichText: Bool = true
     var showAsCards: Bool = true
+    var showPreviews: Bool = true
     var textOnlyHistory: Bool = false
     var ignoredAppBundleIds: [String] = []
     var ignoresPasswordManagers: Bool = true
@@ -18,6 +19,7 @@ extension VeerSettings {
         case showsRichText
         case pastesRichText
         case showAsCards
+        case showPreviews
         case textOnlyHistory
         case ignoredAppBundleIds
         case ignoresPasswordManagers
@@ -34,6 +36,7 @@ extension VeerSettings {
         self.showsRichText = try container.decodeIfPresent(Bool.self, forKey: .showsRichText) ?? true
         self.pastesRichText = try container.decodeIfPresent(Bool.self, forKey: .pastesRichText) ?? true
         self.showAsCards = try container.decodeIfPresent(Bool.self, forKey: .showAsCards) ?? true
+        self.showPreviews = try container.decodeIfPresent(Bool.self, forKey: .showPreviews) ?? true
         self.textOnlyHistory = try container.decodeIfPresent(Bool.self, forKey: .textOnlyHistory) ?? false
         self.ignoredAppBundleIds = try container.decodeIfPresent([String].self, forKey: .ignoredAppBundleIds) ?? []
         self.ignoresPasswordManagers = try container.decodeIfPresent(Bool.self, forKey: .ignoresPasswordManagers) ?? true

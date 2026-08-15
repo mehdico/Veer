@@ -5,11 +5,14 @@ import SwiftUI
 struct FileCellView: View {
     let snapshot: ClipItemSnapshot
     let isSelected: Bool
+    /// Off → no QuickLook thumbnail; icon, name and path only.
+    var previewsEnabled: Bool = true
     let blobProvider: () -> Data?
 
     @State private var url: URL?
     @State private var icon: NSImage?
     @State private var thumbnail: NSImage?
+    @State private var fileMissing = false
 
     private static let cache = NSCache<NSString, NSImage>()
 
@@ -24,7 +27,9 @@ struct FileCellView: View {
                         .font(.system(size: 13, weight: .medium))
                         .lineLimit(1)
                         .truncationMode(.middle)
-                    Text(url?.deletingLastPathComponent().path ?? "")
+                    Text(fileMissing
+                         ? "File unavailable"
+                         : (url?.deletingLastPathComponent().path ?? ""))
                         .font(.system(size: 10))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -33,7 +38,7 @@ struct FileCellView: View {
                 Spacer(minLength: 0)
             }
         }
-        .task(id: snapshot.id) {
+        .task(id: "\(snapshot.id.uuidString)-\(previewsEnabled)") {
             await load()
         }
     }
@@ -49,13 +54,17 @@ struct FileCellView: View {
         if let thumbnail {
             Image(nsImage: thumbnail).resizable().scaledToFit()
         } else if let icon {
-            Image(nsImage: icon).resizable().scaledToFit()
+            Image(nsImage: icon)
+                .resizable()
+                .scaledToFit()
+                .opacity(fileMissing ? 0.35 : 1)
         } else {
             Image(systemName: "doc").resizable().scaledToFit().foregroundStyle(.secondary)
         }
     }
 
     private func load() async {
+        fileMissing = false
         guard let data = blobProvider(),
               let str = String(data: data, encoding: .utf8)
         else { return }
@@ -69,7 +78,16 @@ struct FileCellView: View {
         }
         guard let url = parsed else { return }
         self.url = url
+        if !FileManager.default.fileExists(atPath: url.path) {
+            fileMissing = true
+            thumbnail = nil
+            return
+        }
         icon = NSWorkspace.shared.icon(forFile: url.path)
+        guard previewsEnabled else {
+            thumbnail = nil
+            return
+        }
         let key = "\(snapshot.id.uuidString)-36" as NSString
         if let cached = Self.cache.object(forKey: key) {
             thumbnail = cached

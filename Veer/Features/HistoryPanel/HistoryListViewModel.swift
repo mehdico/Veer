@@ -23,6 +23,10 @@ final class HistoryListViewModel {
     private(set) var filteredIDs: [UUID] = []
     private(set) var filteredItems: [ClipItemSnapshot] = []
 
+    /// Whether on-card content previews (image/PDF/file thumbnails, color
+    /// swatches) are enabled. Off → icons and labels only.
+    var previewsEnabled: Bool { settings?.showPreviews ?? true }
+
     @ObservationIgnored private var itemsByID: [UUID: ClipItemSnapshot] = [:]
     @ObservationIgnored private let blobDataCache = NSCache<NSString, NSData>()
 

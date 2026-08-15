@@ -5,6 +5,8 @@ import SwiftUI
 struct PdfCellView: View {
     let snapshot: ClipItemSnapshot
     let isSelected: Bool
+    /// Off → no first-page thumbnail; icon + label only.
+    var previewsEnabled: Bool = true
     let blobProvider: () -> Data?
 
     @State private var thumbnail: NSImage?
@@ -21,7 +23,7 @@ struct PdfCellView: View {
                         .frame(width: 48, height: 48)
                         .clipShape(RoundedRectangle(cornerRadius: 4))
                 } else {
-                    Image(systemName: "doc.richtext")
+                    Image(systemName: "doc")
                         .resizable()
                         .scaledToFit()
                         .frame(width: 36, height: 36)
@@ -39,7 +41,13 @@ struct PdfCellView: View {
                 Spacer(minLength: 0)
             }
         }
-        .task(id: snapshot.id) { await loadThumbnail() }
+        .task(id: "\(snapshot.id.uuidString)-\(previewsEnabled)") {
+            guard previewsEnabled else {
+                thumbnail = nil
+                return
+            }
+            await loadThumbnail()
+        }
     }
 
     private func loadThumbnail() async {
