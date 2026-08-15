@@ -12,6 +12,7 @@ final class SettingsStore {
     var showAsCards: Bool { didSet { persist() } }
     var showPreviews: Bool { didSet { persist() } }
     var textOnlyHistory: Bool { didSet { persist() } }
+    var alwaysSearchWeb: Bool { didSet { persist() } }
     private(set) var ignoredAppBundleIds: [String] { didSet { persist() } }
     var ignoresPasswordManagers: Bool {
         didSet {
@@ -39,6 +40,7 @@ final class SettingsStore {
         self.showAsCards = loaded.showAsCards
         self.showPreviews = loaded.showPreviews
         self.textOnlyHistory = loaded.textOnlyHistory
+        self.alwaysSearchWeb = loaded.alwaysSearchWeb
         self.ignoredAppBundleIds = loaded.ignoredAppBundleIds
         self.panelSizeByPosition = loaded.panelSizeByPosition
     }
@@ -51,6 +53,7 @@ final class SettingsStore {
             showAsCards: showAsCards,
             showPreviews: showPreviews,
             textOnlyHistory: textOnlyHistory,
+            alwaysSearchWeb: alwaysSearchWeb,
             ignoredAppBundleIds: ignoredAppBundleIds,
             ignoresPasswordManagers: ignoresPasswordManagers,
             didSeedDefaultIgnoredApps: didSeedDefaultIgnoredApps,

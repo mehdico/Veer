@@ -7,6 +7,7 @@ struct VeerSettings: Codable, Sendable, Equatable {
     var showAsCards: Bool = true
     var showPreviews: Bool = true
     var textOnlyHistory: Bool = false
+    var alwaysSearchWeb: Bool = false
     var ignoredAppBundleIds: [String] = []
     var ignoresPasswordManagers: Bool = true
     var didSeedDefaultIgnoredApps: Bool = false
@@ -21,6 +22,7 @@ extension VeerSettings {
         case showAsCards
         case showPreviews
         case textOnlyHistory
+        case alwaysSearchWeb
         case ignoredAppBundleIds
         case ignoresPasswordManagers
         case didSeedDefaultIgnoredApps
@@ -38,6 +40,7 @@ extension VeerSettings {
         self.showAsCards = try container.decodeIfPresent(Bool.self, forKey: .showAsCards) ?? true
         self.showPreviews = try container.decodeIfPresent(Bool.self, forKey: .showPreviews) ?? true
         self.textOnlyHistory = try container.decodeIfPresent(Bool.self, forKey: .textOnlyHistory) ?? false
+        self.alwaysSearchWeb = try container.decodeIfPresent(Bool.self, forKey: .alwaysSearchWeb) ?? false
         self.ignoredAppBundleIds = try container.decodeIfPresent([String].self, forKey: .ignoredAppBundleIds) ?? []
         self.ignoresPasswordManagers = try container.decodeIfPresent(Bool.self, forKey: .ignoresPasswordManagers) ?? true
         self.didSeedDefaultIgnoredApps = try container.decodeIfPresent(Bool.self, forKey: .didSeedDefaultIgnoredApps) ?? false

@@ -50,6 +50,15 @@ struct GeneralTab: View {
                         .accessibilityIdentifier("settingsPastesRichTextToggle")
                 }
 
+                Section {
+                    Toggle("Search the web for unrecognized text", isOn: $settings.alwaysSearchWeb)
+                        .accessibilityIdentifier("settingsSearchWebToggle")
+                } header: {
+                    Text("Smart Actions")
+                } footer: {
+                    Text("Plain text clips that aren't a URL, path or other recognized value get a Search the Web action. Non-English text also gets a Translate to English action when its language pack is installed on this Mac.")
+                }
+
                 Section("Startup") {
                     Toggle("Open at login", isOn: $launchAtLogin)
                         .accessibilityIdentifier("settingsLaunchAtLoginToggle")

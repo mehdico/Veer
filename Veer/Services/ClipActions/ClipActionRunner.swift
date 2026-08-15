@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import Translation
 
 @MainActor
 protocol ClipActionRunning: AnyObject {
@@ -14,18 +15,29 @@ protocol ClipActionRunning: AnyObject {
 final class LiveClipActionRunner: ClipActionRunning {
     private let pasteboardWriter: any PasteboardWriting
     private let workspace: NSWorkspace
+    private let downloadsDirectory: URL
 
-    init(pasteboardWriter: any PasteboardWriting, workspace: NSWorkspace = .shared) {
+    init(
+        pasteboardWriter: any PasteboardWriting,
+        workspace: NSWorkspace = .shared,
+        downloadsDirectory: URL? = nil
+    ) {
         self.pasteboardWriter = pasteboardWriter
         self.workspace = workspace
+        self.downloadsDirectory = downloadsDirectory ?? Self.defaultDownloadsDirectory()
     }
 
     func run(_ action: ClipAction) {
         switch action {
+        // Web & contact
         case .openURL(let url):
             workspace.open(url)
         case .copyMarkdownLink(let url):
-            copyText("[\(url.absoluteString)](\(url.absoluteString))")
+            if url.isFileURL {
+                copyText("[\(url.lastPathComponent)](\(url.path))")
+            } else {
+                copyText("[\(url.absoluteString)](\(url.absoluteString))")
+            }
         case .composeEmail(let address):
             var components = URLComponents()
             components.scheme = "mailto"
@@ -41,11 +53,182 @@ final class LiveClipActionRunner: ClipActionRunning {
             }
         case .copySwiftColor(let hex):
             copyText(Self.swiftColorSnippet(hex: hex))
+
+        // Files & folders
+        case .revealInFinder(let url):
+            workspace.activateFileViewerSelecting([url])
+        case .openFile(let url):
+            workspace.open(url)
+        case .copyPath(let url):
+            copyText(url.path)
+        case .copyFile(let url):
+            pasteboardWriter.write(typed: [
+                NSPasteboard.PasteboardType.fileURL.rawValue: Data(url.absoluteString.utf8),
+                NSPasteboard.PasteboardType.string.rawValue: Data(url.path.utf8),
+            ])
+        case .openInTerminal(let url):
+            let terminal = URL(fileURLWithPath: "/System/Applications/Utilities/Terminal.app")
+            openInApp(url, application: terminal, fallbackToDefault: true)
+        case .openInXcode(let url):
+            let xcode = URL(fileURLWithPath: "/Applications/Xcode.app")
+            openInApp(url, application: xcode, fallbackToDefault: true)
+
+        // Text & data
+        case .openInMaps(let latitude, let longitude):
+            var components = URLComponents()
+            components.scheme = "http"
+            components.host = "maps.apple.com"
+            components.queryItems = [URLQueryItem(name: "ll", value: "\(latitude),\(longitude)")]
+            if let url = components.url {
+                workspace.open(url)
+            }
+        case .copyMathResult(let result):
+            copyText(result)
+        case .copyPrettyJSON(let json), .copyMinifiedJSON(let json):
+            copyText(json)
+        case .copyEpochSeconds(let epoch):
+            copyText(epoch)
+        case .copyGitCloneURL(let cloneURL):
+            copyText(cloneURL)
+        case .openGitHub(let url):
+            workspace.open(url)
+        case .searchWeb(let query):
+            var components = URLComponents()
+            components.scheme = "https"
+            components.host = "www.google.com"
+            components.path = "/search"
+            components.queryItems = [URLQueryItem(name: "q", value: query)]
+            if let url = components.url {
+                workspace.open(url)
+            }
+        case .translate(let text, let sourceLanguage):
+            // Translation is async and may need to download a language pack;
+            // the result is copied to the pasteboard when it arrives.
+            Task { await Self.translateAndCopy(
+                text,
+                sourceLanguage: sourceLanguage,
+                pasteboardWriter: pasteboardWriter
+            ) }
+
+        // Rich media
+        case .saveToDownloads(let source, let fileExtension, let suggestedName):
+            saveToDownloads(source: source, fileExtension: fileExtension, suggestedName: suggestedName)
+        case .copyAsPNG(let source):
+            copyAsPNG(source: source)
+        case .copyPlainText(let text):
+            copyText(text)
+        case .copyHexColor(let hex):
+            copyText(hex)
+        case .copyCSSRGB(let red, let green, let blue):
+            copyText("rgb(\(red), \(green), \(blue))")
+        case .copyUIColor(let red, let green, let blue, let alpha):
+            copyText(Self.uiColorSnippet(red: red, green: green, blue: blue, alpha: alpha))
         }
     }
 
+    // MARK: - Helpers
+
     private func copyText(_ text: String) {
         pasteboardWriter.write(typed: [NSPasteboard.PasteboardType.string.rawValue: Data(text.utf8)])
+    }
+
+    private func openInApp(_ url: URL, application appURL: URL, fallbackToDefault: Bool) {
+        guard FileManager.default.fileExists(atPath: appURL.path) else {
+            if fallbackToDefault {
+                workspace.open(url)
+            }
+            return
+        }
+        workspace.open([url], withApplicationAt: appURL, configuration: .init()) { _, error in
+            if let error {
+                VeerLogger(category: .general).error("Open with \(appURL.lastPathComponent) failed", error)
+            }
+        }
+    }
+
+    private func saveToDownloads(source: ClipContentSource, fileExtension: String, suggestedName: String?) {
+        let data: Data?
+        switch source {
+        case .data(let inline): data = inline
+        case .file(let url): data = try? Data(contentsOf: url)
+        }
+        guard let data else { return }
+        let base: String
+        if let suggestedName, !suggestedName.isEmpty {
+            base = suggestedName
+        } else {
+            base = "Veer clip"
+        }
+        var url = downloadsDirectory.appendingPathComponent("\(base).\(fileExtension)")
+        var counter = 2
+        while FileManager.default.fileExists(atPath: url.path) {
+            url = downloadsDirectory.appendingPathComponent("\(base) \(counter).\(fileExtension)")
+            counter += 1
+        }
+        do {
+            try data.write(to: url)
+            VeerLogger(category: .general).info("Saved clip to \(url.path)")
+        } catch {
+            VeerLogger(category: .general).error("Save to Downloads failed", error)
+        }
+    }
+
+    private func copyAsPNG(source: ClipContentSource) {
+        let data: Data?
+        switch source {
+        case .data(let inline): data = inline
+        case .file(let url): data = try? Data(contentsOf: url)
+        }
+        guard let data,
+              let image = NSImage(data: data),
+              let tiff = image.tiffRepresentation,
+              let rep = NSBitmapImageRep(data: tiff),
+              let png = rep.representation(using: .png, properties: [:])
+        else { return }
+        pasteboardWriter.write(typed: [NSPasteboard.PasteboardType.png.rawValue: png])
+    }
+
+    /// Translates text and writes the result to the pasteboard. Runs on the
+    /// main actor; failures are logged and leave the pasteboard untouched.
+    /// The action is only offered for installed language packs, but this stays
+    /// defensive: unsupported pairs and machines where packs can't be
+    /// downloaded fail gracefully instead of crashing.
+    private static func translateAndCopy(
+        _ text: String,
+        sourceLanguage: String,
+        pasteboardWriter: any PasteboardWriting
+    ) async {
+        guard #available(macOS 26.0, *) else {
+            VeerLogger(category: .general).warning("Translation requires macOS 26")
+            return
+        }
+        let source = Locale.Language(identifier: sourceLanguage)
+        let target = Locale.Language(identifier: "en")
+        let status = await LanguageAvailability().status(from: source, to: target)
+        guard status != .unsupported else {
+            VeerLogger(category: .general).warning("Translation unsupported for \(sourceLanguage)")
+            return
+        }
+        let session = TranslationSession(installedSource: source, target: target)
+        do {
+            if status == .supported {
+                // Model not installed; some systems can download it on demand.
+                try await session.prepareTranslation()
+            }
+            let response = try await session.translate(text)
+            pasteboardWriter.write(
+                typed: [NSPasteboard.PasteboardType.string.rawValue: Data(response.targetText.utf8)]
+            )
+        } catch {
+            VeerLogger(category: .general).error(
+                "Translation failed (pack for \(sourceLanguage) not installed?)", error
+            )
+        }
+    }
+
+    private static func defaultDownloadsDirectory() -> URL {
+        FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
+            ?? FileManager.default.homeDirectoryForCurrentUser
     }
 
     /// Renders a hex color (3, 6 or 8 digits) as a SwiftUI `Color` snippet,
@@ -72,6 +255,14 @@ final class LiveClipActionRunner: ClipActionRunning {
         return String(
             format: "Color(red: %.3f, green: %.3f, blue: %.3f)",
             locale: Locale(identifier: "en_US_POSIX"), r, g, b
+        )
+    }
+
+    /// Renders RGBA components as a `UIColor` snippet for iOS code.
+    static func uiColorSnippet(red: Double, green: Double, blue: Double, alpha: Double) -> String {
+        String(
+            format: "UIColor(red: %.3f, green: %.3f, blue: %.3f, alpha: %.3f)",
+            locale: Locale(identifier: "en_US_POSIX"), red, green, blue, alpha
         )
     }
 }

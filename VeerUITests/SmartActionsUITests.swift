@@ -34,9 +34,18 @@ final class SmartActionsUITests: XCTestCase {
         searchField.typeText(query)
     }
 
-    /// The default layout is cards: ↓ reveals/steps through actions, ↑ exits.
+    /// The default layout is cards: ↓ opens the action strip (and ↓ again
+    /// closes it), ← / → step between the actions while it's open, ↑ exits.
     private func stepActions(_ panel: XCUIElement) {
         panel.typeKey(.downArrow, modifierFlags: [])
+    }
+
+    private func nextAction(_ panel: XCUIElement) {
+        panel.typeKey(.rightArrow, modifierFlags: [])
+    }
+
+    private func previousAction(_ panel: XCUIElement) {
+        panel.typeKey(.leftArrow, modifierFlags: [])
     }
 
     private func exitActions(_ panel: XCUIElement) {
@@ -66,10 +75,23 @@ final class SmartActionsUITests: XCTestCase {
         search(panel, for: "veer")
 
         stepActions(panel) // opens strip, first action highlighted
-        stepActions(panel) // step to Copy Markdown Link
+        nextAction(panel) // step to Copy Markdown Link
         panel.typeKey(.return, modifierFlags: [])
 
         XCTAssertTrue(waitForGone(panel, timeout: 3), "Copy action should dismiss the panel, ready to paste")
+    }
+
+    func testDownArrowTogglesStrip() {
+        let panel = openPanel()
+        search(panel, for: "veer")
+
+        stepActions(panel) // open
+        let openButton = panel.buttons["clipAction_openURL"]
+        XCTAssertTrue(openButton.waitForExistence(timeout: 2))
+        XCTAssertTrue(openButton.isSelected, "First action should be highlighted")
+
+        stepActions(panel) // ↓ again closes
+        XCTAssertTrue(waitForGone(openButton, timeout: 2), "↓ again should close the strip")
     }
 
     func testStepKeysCycleAndExitKeyCloses() {
@@ -84,16 +106,20 @@ final class SmartActionsUITests: XCTestCase {
         XCTAssertTrue(caption.waitForExistence(timeout: 2))
         XCTAssertEqual(caption.label, "Open in Browser", "Caption should name the highlighted action")
 
-        stepActions(panel)
+        nextAction(panel)
         let copyButton = panel.buttons["clipAction_copyMarkdownLink"]
         XCTAssertTrue(copyButton.waitForExistence(timeout: 2))
         XCTAssertTrue(copyButton.isSelected, "Second action should be highlighted")
         XCTAssertFalse(openButton.isSelected)
         XCTAssertEqual(caption.label, "Copy Markdown Link", "Caption should follow the highlight")
 
-        stepActions(panel)
+        nextAction(panel)
         XCTAssertTrue(openButton.isSelected, "Stepping past the last action should wrap to the first")
         XCTAssertEqual(caption.label, "Open in Browser")
+
+        previousAction(panel)
+        XCTAssertTrue(copyButton.isSelected, "← should step backward and wrap to the last action")
+        XCTAssertEqual(caption.label, "Copy Markdown Link")
 
         exitActions(panel)
         XCTAssertTrue(waitForGone(openButton, timeout: 2), "Exit key should close the strip")

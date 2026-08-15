@@ -63,54 +63,49 @@ enum PanelKeyHandler {
 
         switch key {
         case .upArrow:
-            if viewModel.panel.horizontal {
-                // Cards: ↑ exits the action strip.
+            if viewModel.actionsExpanded {
+                // Strip open: ↑ exits it.
                 if !press.phase.contains(.repeat) {
                     viewModel.closeActionStrip()
                 }
-            } else {
-                viewModel.closeActionStrip()
+            } else if !viewModel.panel.horizontal {
+                // Strip closed, vertical list: ↑ moves up through history.
                 if navigationRepeatGate.shouldAccept(phase: press.phase, direction: .up) {
                     viewModel.navigateUp()
                 }
             }
             return .handled
         case .downArrow:
-            if viewModel.panel.horizontal {
-                // Cards: ↓ reveals and steps through the actions.
-                if !press.phase.contains(.repeat) {
+            // ↓ toggles the action strip in both layouts: opens it on the
+            // first action, closes it when already open. Clip navigation
+            // pauses while the strip is open.
+            if !press.phase.contains(.repeat) {
+                if viewModel.actionsExpanded {
+                    viewModel.closeActionStrip()
+                } else {
                     viewModel.stepActions()
-                }
-            } else {
-                viewModel.closeActionStrip()
-                if navigationRepeatGate.shouldAccept(phase: press.phase, direction: .down) {
-                    viewModel.navigateDown()
                 }
             }
             return .handled
         case .leftArrow:
-            if viewModel.panel.horizontal {
-                viewModel.closeActionStrip()
+            if viewModel.actionsExpanded {
+                // Strip open: ← steps the highlight backward (wraps).
+                viewModel.stepActionsBackward()
+            } else if viewModel.panel.horizontal {
+                // Strip closed, cards: ← moves up through history.
                 if navigationRepeatGate.shouldAccept(phase: press.phase, direction: .up) {
                     viewModel.navigateUp()
-                }
-            } else {
-                // List: ← exits the action strip.
-                if !press.phase.contains(.repeat) {
-                    viewModel.closeActionStrip()
                 }
             }
             return .handled
         case .rightArrow:
-            if viewModel.panel.horizontal {
-                viewModel.closeActionStrip()
+            if viewModel.actionsExpanded {
+                // Strip open: → steps the highlight forward (wraps).
+                viewModel.stepActions()
+            } else if viewModel.panel.horizontal {
+                // Strip closed, cards: → moves down through history.
                 if navigationRepeatGate.shouldAccept(phase: press.phase, direction: .down) {
                     viewModel.navigateDown()
-                }
-            } else {
-                // List: → reveals and steps through the actions.
-                if !press.phase.contains(.repeat) {
-                    viewModel.stepActions()
                 }
             }
             return .handled

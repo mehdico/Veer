@@ -6,7 +6,9 @@ import Testing
 @MainActor
 struct ClipActionsTests {
     private func makeViewModel(
-        texts: [String]
+        texts: [String],
+        settings: SettingsStore? = nil,
+        translationAvailabilityCheck: ((String) async -> Bool)? = nil
     ) async throws -> (HistoryListViewModel, ClipRepositoryLive, MockClipActionRunner, PanelCoordinator) {
         let container = try VeerStore.inMemory()
         let repo = ClipRepositoryLive(container: container)
@@ -24,7 +26,9 @@ struct ClipActionsTests {
             paster: MockPaster(),
             pasteboardWriter: MockPasteboardWriter(),
             panel: panel,
-            actionRunner: runner
+            settings: settings,
+            actionRunner: runner,
+            translationAvailabilityCheck: translationAvailabilityCheck
         )
         vm.refresh()
         return (vm, repo, runner, panel)
@@ -64,6 +68,141 @@ struct ClipActionsTests {
 
         let imageClip = snapshot(kind: .image, preview: "FF5733")
         #expect(vm.actions(for: imageClip).isEmpty)
+    }
+
+    @Test func fileClipGetsFinderAndCopyActions() async throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("veer-actions-\(UUID().uuidString).txt")
+        try Data("hello".utf8).write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let (vm, repo, _, _) = try await makeViewModel(texts: [])
+        _ = try repo.insert(
+            payload: ClipPayload(typed: [
+                NSPasteboard.PasteboardType.fileURL.rawValue: Data(url.absoluteString.utf8),
+            ]),
+            sourceBundleId: "com.test"
+        )
+        vm.refresh()
+
+        let clip = try #require(vm.items.first)
+        #expect(vm.actions(for: clip) == [
+            .revealInFinder(url),
+            .openFile(url),
+            .copyPath(url),
+            .copyFile(url),
+            .copyMarkdownLink(url),
+        ])
+    }
+
+    @Test func folderClipAddsTerminalAction() async throws {
+        let (vm, repo, _, _) = try await makeViewModel(texts: [])
+        _ = try repo.insert(
+            payload: ClipPayload(typed: [
+                NSPasteboard.PasteboardType.fileURL.rawValue: Data("file:///tmp".utf8),
+            ]),
+            sourceBundleId: "com.test"
+        )
+        vm.refresh()
+
+        let clip = try #require(vm.items.first)
+        let actions = vm.actions(for: clip)
+        #expect(actions.contains(.openInTerminal(URL(fileURLWithPath: "/tmp"))))
+        #expect(actions.count == 6)
+    }
+
+    @Test func existingPathTextGetsFileActions() async throws {
+        let (vm, _, _, _) = try await makeViewModel(texts: ["/tmp"])
+        let clip = try #require(vm.items.first)
+
+        let actions = vm.actions(for: clip)
+        #expect(actions.first == .revealInFinder(URL(fileURLWithPath: "/tmp")))
+        #expect(actions.contains(.openInTerminal(URL(fileURLWithPath: "/tmp"))))
+    }
+
+    @Test func imageClipGetsDownloadAndPNGActions() async throws {
+        let png = try #require(Self.redPixelPNG())
+        let (vm, repo, _, _) = try await makeViewModel(texts: [])
+        _ = try repo.insert(
+            payload: ClipPayload(typed: [NSPasteboard.PasteboardType.png.rawValue: png]),
+            sourceBundleId: "com.test"
+        )
+        vm.refresh()
+
+        let clip = try #require(vm.items.first)
+        #expect(vm.actions(for: clip) == [
+            .saveToDownloads(source: .data(png), fileExtension: "png", suggestedName: nil),
+            .copyAsPNG(source: .data(png)),
+        ])
+    }
+
+    @Test func colorClipGetsHexRGBAndUIColorActions() async throws {
+        let color = NSColor(srgbRed: 1.0, green: 87.0 / 255.0, blue: 51.0 / 255.0, alpha: 1.0)
+        let data = try NSKeyedArchiver.archivedData(withRootObject: color, requiringSecureCoding: true)
+        let (vm, repo, _, _) = try await makeViewModel(texts: [])
+        _ = try repo.insert(
+            payload: ClipPayload(typed: [NSPasteboard.PasteboardType.color.rawValue: data]),
+            sourceBundleId: "com.test"
+        )
+        vm.refresh()
+
+        let clip = try #require(vm.items.first)
+        #expect(vm.actions(for: clip) == [
+            .copyHexColor("#FF5733"),
+            .copyCSSRGB(red: 255, green: 87, blue: 51),
+            .copyUIColor(red: 1.0, green: 0.3411764705882353, blue: 0.2, alpha: 1.0),
+        ])
+    }
+
+    @Test func richTextClipGetsCopyPlainTextAction() async throws {
+        let attr = NSAttributedString(string: "Formatted hello", attributes: [
+            .font: NSFont.boldSystemFont(ofSize: 14),
+        ])
+        let rtf = try attr.data(from: NSRange(location: 0, length: attr.length), documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf])
+        let (vm, repo, _, _) = try await makeViewModel(texts: [])
+        _ = try repo.insert(
+            payload: ClipPayload(typed: [NSPasteboard.PasteboardType.rtf.rawValue: rtf]),
+            sourceBundleId: "com.test"
+        )
+        vm.refresh()
+
+        let clip = try #require(vm.items.first)
+        let actions = vm.actions(for: clip)
+        #expect(actions.last == .copyPlainText("Formatted hello"))
+    }
+
+    @Test func searchWebToggleAddsActionForPlainProse() async throws {
+        let suite = try #require(UserDefaults(suiteName: "veer-tests-\(UUID().uuidString)"))
+        let settings = SettingsStore(defaults: suite)
+        settings.alwaysSearchWeb = true
+        let (vm, _, _, _) = try await makeViewModel(texts: ["Plain text fixture"], settings: settings)
+        let clip = try #require(vm.items.first)
+
+        #expect(vm.actions(for: clip) == [.searchWeb("Plain text fixture")])
+    }
+
+    @Test func nonEnglishProseGetsTranslateActionWhenPackAvailable() async throws {
+        let (vm, _, _, _) = try await makeViewModel(
+            texts: ["Bonjour tout le monde, comment allez-vous aujourd'hui ?"],
+            translationAvailabilityCheck: { _ in true }
+        )
+        let clip = try #require(vm.items.first)
+
+        let actions = vm.actions(for: clip)
+        #expect(actions == [.translate(
+            text: "Bonjour tout le monde, comment allez-vous aujourd'hui ?",
+            sourceLanguage: "fr"
+        )])
+    }
+
+    @Test func nonEnglishProseWithoutPackGetsNoTranslateAction() async throws {
+        let (vm, _, _, _) = try await makeViewModel(
+            texts: ["Bonjour tout le monde, comment allez-vous aujourd'hui ?"],
+            translationAvailabilityCheck: { _ in false }
+        )
+        let clip = try #require(vm.items.first)
+
+        #expect(vm.actions(for: clip).isEmpty)
     }
 
     @Test func runPrimaryActionRunsFirstDetectedActionAndHidesPanel() async throws {
@@ -149,6 +288,26 @@ struct ClipActionsTests {
         #expect(vm.actionIndex == 0)
     }
 
+    @Test func stepActionsBackwardWrapsToLastAction() async throws {
+        let (vm, _, _, _) = try await makeViewModel(texts: ["https://example.com"])
+
+        vm.stepActions() // opens on first action
+        #expect(vm.actionIndex == 0)
+        vm.stepActionsBackward()
+        #expect(vm.actionIndex == 1) // wraps to the last action
+        vm.stepActionsBackward()
+        #expect(vm.actionIndex == 0)
+    }
+
+    @Test func stepActionsBackwardOpensStripWhenClosed() async throws {
+        let (vm, _, _, _) = try await makeViewModel(texts: ["https://example.com"])
+
+        vm.stepActionsBackward()
+
+        #expect(vm.actionsExpanded == true)
+        #expect(vm.actionIndex == 0)
+    }
+
     @Test func stepActionsDoesNothingForUndetectedClip() async throws {
         let (vm, _, _, _) = try await makeViewModel(texts: ["Plain text fixture"])
 
@@ -199,5 +358,23 @@ struct ClipActionsTests {
         vm.runHighlightedAction()
 
         #expect(runner.runActions.first == .copyMarkdownLink(try #require(URL(string: "https://example.com"))))
+    }
+
+    private static func redPixelPNG() -> Data? {
+        let rep = NSBitmapImageRep(
+            bitmapDataPlanes: nil,
+            pixelsWide: 1,
+            pixelsHigh: 1,
+            bitsPerSample: 8,
+            samplesPerPixel: 4,
+            hasAlpha: true,
+            isPlanar: false,
+            colorSpaceName: .deviceRGB,
+            bytesPerRow: 4,
+            bitsPerPixel: 32
+        )
+        guard let rep else { return nil }
+        rep.setColor(NSColor.red, atX: 0, y: 0)
+        return rep.representation(using: .png, properties: [:])
     }
 }
