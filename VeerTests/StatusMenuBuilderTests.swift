@@ -84,6 +84,30 @@ struct StatusMenuBuilderTests {
         #expect(delete?.keyEquivalentModifierMask == .control)
     }
 
+    @Test func everyTopLevelItemHasTemplateIcon() {
+        let menu = StatusMenuBuilder.build(target: StubActions())
+        let titles = [
+            "Show Veer", "Position", "Delete clip", "Clear history…",
+            "Open at login", "Settings…", "Help", "About Veer", "Quit Veer",
+        ]
+        for title in titles {
+            let item = menu.item(withTitle: title)
+            #expect(item != nil, "missing item \(title)")
+            #expect(item?.image != nil, "missing icon on \(title)")
+            #expect(item?.image?.isTemplate == true, "icon not template on \(title)")
+        }
+    }
+
+    @Test func positionSubmenuItemsHaveTemplateIcons() {
+        let menu = StatusMenuBuilder.build(target: StubActions())
+        let submenu = menu.item(withTitle: "Position")?.submenu
+        #expect(submenu != nil)
+        for item in submenu?.items ?? [] {
+            #expect(item.image != nil)
+            #expect(item.image?.isTemplate == true)
+        }
+    }
+
     @Test func selectPositionMenuItemDispatchesToTarget() {
         let target = StubActions()
         let menu = StatusMenuBuilder.build(target: target)

@@ -7,6 +7,7 @@ enum StatusMenuBuilder {
         menu.autoenablesItems = false
 
         menu.addItem(makeItem(
+            symbol: "rectangle.portrait.on.rectangle.portrait",
             title: "Show Veer",
             action: #selector(StatusMenuActions.togglePanel(_:)),
             keyEquivalent: "V",
@@ -15,6 +16,7 @@ enum StatusMenuBuilder {
         ))
 
         let positionItem = makeItem(
+            symbol: "rectangle.3.group",
             title: "Position",
             action: nil,
             identifier: AccessibilityIdentifiers.positionButton,
@@ -26,6 +28,7 @@ enum StatusMenuBuilder {
         menu.addItem(.separator())
 
         let deleteItem = makeItem(
+            symbol: "trash",
             title: "Delete clip",
             action: #selector(StatusMenuActions.deleteSelected(_:)),
             keyEquivalent: String(Character(UnicodeScalar(NSDeleteCharacter)!)),
@@ -37,6 +40,7 @@ enum StatusMenuBuilder {
         menu.addItem(deleteItem)
 
         menu.addItem(makeItem(
+            symbol: "trash.slash",
             title: "Clear history…",
             action: #selector(StatusMenuActions.clearHistory(_:)),
             identifier: AccessibilityIdentifiers.clearHistoryButton,
@@ -46,6 +50,7 @@ enum StatusMenuBuilder {
         menu.addItem(.separator())
 
         menu.addItem(makeItem(
+            symbol: "power",
             title: "Open at login",
             action: #selector(StatusMenuActions.toggleLaunchAtLogin(_:)),
             identifier: AccessibilityIdentifiers.launchAtLoginButton,
@@ -53,6 +58,7 @@ enum StatusMenuBuilder {
         ))
 
         menu.addItem(makeItem(
+            symbol: "gearshape",
             title: "Settings…",
             action: #selector(StatusMenuActions.showPreferences(_:)),
             keyEquivalent: ",",
@@ -63,6 +69,7 @@ enum StatusMenuBuilder {
         menu.addItem(.separator())
 
         menu.addItem(makeItem(
+            symbol: "questionmark.circle",
             title: "Help",
             action: #selector(StatusMenuActions.showHelp(_:)),
             identifier: AccessibilityIdentifiers.helpButton,
@@ -70,6 +77,7 @@ enum StatusMenuBuilder {
         ))
 
         menu.addItem(makeItem(
+            symbol: "info.circle",
             title: "About Veer",
             action: #selector(StatusMenuActions.showAbout(_:)),
             identifier: AccessibilityIdentifiers.aboutButton,
@@ -79,6 +87,7 @@ enum StatusMenuBuilder {
         menu.addItem(.separator())
 
         menu.addItem(makeItem(
+            symbol: "power.circle",
             title: "Quit Veer",
             action: #selector(StatusMenuActions.quit(_:)),
             keyEquivalent: "q",
@@ -89,6 +98,7 @@ enum StatusMenuBuilder {
         #if DEBUG
         menu.addItem(.separator())
         menu.addItem(makeItem(
+            symbol: "ladybug",
             title: "Debug: history 0",
             action: nil,
             identifier: AccessibilityIdentifiers.debugHistoryCount,
@@ -103,6 +113,7 @@ enum StatusMenuBuilder {
         let submenu = NSMenu(title: "Position")
         for position in PanelPosition.menuOrder {
             let item = makeItem(
+                symbol: position.menuGlyph,
                 title: position.title,
                 action: #selector(StatusMenuActions.selectPosition(_:)),
                 identifier: position.accessibilityIdentifier,
@@ -115,6 +126,7 @@ enum StatusMenuBuilder {
     }
 
     private static func makeItem(
+        symbol: String? = nil,
         title: String,
         action: Selector?,
         keyEquivalent: String = "",
@@ -122,8 +134,23 @@ enum StatusMenuBuilder {
         target: StatusMenuActions?
     ) -> NSMenuItem {
         let item = NSMenuItem(title: title, action: action, keyEquivalent: keyEquivalent)
+        if let symbol {
+            item.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
+        }
         item.target = target
         item.setAccessibilityIdentifier(identifier)
         return item
+    }
+}
+
+private extension PanelPosition {
+    var menuGlyph: String {
+        switch self {
+        case .right: "rectangle.righthalf.inset.filled"
+        case .left: "rectangle.lefthalf.inset.filled"
+        case .top: "rectangle.tophalf.inset.filled"
+        case .bottom, .bottomSmall, .bottomLarge: "rectangle.bottomhalf.inset.filled"
+        case .centerExtraSmall, .centerSmall, .centerMedium, .centerLarge: "rectangle.center.inset.filled"
+        }
     }
 }
