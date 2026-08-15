@@ -62,14 +62,56 @@ enum PanelKeyHandler {
         }
 
         switch key {
-        case .upArrow, .leftArrow:
-            if navigationRepeatGate.shouldAccept(phase: press.phase, direction: .up) {
-                viewModel.navigateUp()
+        case .upArrow:
+            if viewModel.panel.horizontal {
+                // Cards: ↑ exits the action strip.
+                if !press.phase.contains(.repeat) {
+                    viewModel.closeActionStrip()
+                }
+            } else {
+                viewModel.closeActionStrip()
+                if navigationRepeatGate.shouldAccept(phase: press.phase, direction: .up) {
+                    viewModel.navigateUp()
+                }
             }
             return .handled
-        case .downArrow, .rightArrow:
-            if navigationRepeatGate.shouldAccept(phase: press.phase, direction: .down) {
-                viewModel.navigateDown()
+        case .downArrow:
+            if viewModel.panel.horizontal {
+                // Cards: ↓ reveals and steps through the actions.
+                if !press.phase.contains(.repeat) {
+                    viewModel.stepActions()
+                }
+            } else {
+                viewModel.closeActionStrip()
+                if navigationRepeatGate.shouldAccept(phase: press.phase, direction: .down) {
+                    viewModel.navigateDown()
+                }
+            }
+            return .handled
+        case .leftArrow:
+            if viewModel.panel.horizontal {
+                viewModel.closeActionStrip()
+                if navigationRepeatGate.shouldAccept(phase: press.phase, direction: .up) {
+                    viewModel.navigateUp()
+                }
+            } else {
+                // List: ← exits the action strip.
+                if !press.phase.contains(.repeat) {
+                    viewModel.closeActionStrip()
+                }
+            }
+            return .handled
+        case .rightArrow:
+            if viewModel.panel.horizontal {
+                viewModel.closeActionStrip()
+                if navigationRepeatGate.shouldAccept(phase: press.phase, direction: .down) {
+                    viewModel.navigateDown()
+                }
+            } else {
+                // List: → reveals and steps through the actions.
+                if !press.phase.contains(.repeat) {
+                    viewModel.stepActions()
+                }
             }
             return .handled
         case .pageUp:
@@ -79,13 +121,28 @@ enum PanelKeyHandler {
             viewModel.navigateDown(by: 10)
             return .handled
         case .return:
-            Task { await viewModel.pasteSelected() }
+            if mods.contains(.command) {
+                viewModel.runPrimaryAction()
+            } else if viewModel.actionsExpanded {
+                viewModel.runHighlightedAction()
+            } else {
+                Task { await viewModel.pasteSelected() }
+            }
             return .handled
         case .escape:
-            if !viewModel.searchText.isEmpty {
+            if viewModel.actionsExpanded {
+                viewModel.closeActionStrip()
+            } else if !viewModel.searchText.isEmpty {
                 viewModel.searchText = ""
             } else {
                 viewModel.panel.hide()
+            }
+            return .handled
+        case .space:
+            if viewModel.searchText.isEmpty {
+                viewModel.togglePreview()
+            } else {
+                viewModel.searchText += " "
             }
             return .handled
         case .tab:

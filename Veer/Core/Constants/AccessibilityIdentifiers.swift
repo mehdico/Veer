@@ -43,5 +43,10 @@ enum AccessibilityIdentifiers {
     static let yippyRichTextCellView = "YippyRichTextCellView"
 
     static let previewWindow = "previewWindow"
+    static let clipActionStrip = "clipActionStrip"
+    static let clipActionTitle = "clipActionTitle"
+    static func clipActionButton(_ actionID: String) -> String {
+        "clipAction_\(actionID)"
+    }
     static let debugHistoryCount = "debugHistoryCount"
 }

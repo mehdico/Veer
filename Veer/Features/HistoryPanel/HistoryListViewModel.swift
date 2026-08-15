@@ -9,7 +9,16 @@ final class HistoryListViewModel {
     var searchText: String = "" {
         didSet { runSearch() }
     }
-    var selectedIndex: Int = 0
+    /// Reveals the inline action strip for the selected clip. Closed whenever
+    /// the selection moves, so it always belongs to the visible card.
+    var selectedIndex: Int = 0 {
+        didSet {
+            if oldValue != selectedIndex { closeActionStrip() }
+        }
+    }
+    var actionsExpanded = false
+    /// Index of the highlighted action while the strip is open.
+    var actionIndex = 0
     var quickPasteBase: Int = 0
     private(set) var filteredIDs: [UUID] = []
     private(set) var filteredItems: [ClipItemSnapshot] = []
@@ -27,6 +36,7 @@ final class HistoryListViewModel {
     @ObservationIgnored let pasteDelay: Duration
     @ObservationIgnored let access: (any AccessChecking)?
     @ObservationIgnored let alerter: (any Alerting)?
+    @ObservationIgnored let actionRunner: any ClipActionRunning
     @ObservationIgnored private var didWarnAccessibility = false
 
     private static let plainTextRawValue = "public.utf8-plain-text"
@@ -72,7 +82,8 @@ final class HistoryListViewModel {
         settings: SettingsStore? = nil,
         pasteDelay: Duration = .milliseconds(50),
         access: (any AccessChecking)? = nil,
-        alerter: (any Alerting)? = nil
+        alerter: (any Alerting)? = nil,
+        actionRunner: any ClipActionRunning
     ) {
         self.repository = repository
         self.paster = paster
@@ -83,6 +94,7 @@ final class HistoryListViewModel {
         self.pasteDelay = pasteDelay
         self.access = access
         self.alerter = alerter
+        self.actionRunner = actionRunner
         self.blobDataCache.countLimit = 256
     }
 
@@ -94,7 +106,8 @@ final class HistoryListViewModel {
         settings: SettingsStore? = nil,
         pasteDelay: Duration = .milliseconds(50),
         access: (any AccessChecking)? = nil,
-        alerter: (any Alerting)? = nil
+        alerter: (any Alerting)? = nil,
+        actionRunner: (any ClipActionRunning)? = nil
     ) {
         self.init(
             repository: repository,
@@ -105,7 +118,8 @@ final class HistoryListViewModel {
             settings: settings,
             pasteDelay: pasteDelay,
             access: access,
-            alerter: alerter
+            alerter: alerter,
+            actionRunner: actionRunner ?? LiveClipActionRunner(pasteboardWriter: pasteboardWriter)
         )
     }
 
@@ -178,6 +192,7 @@ final class HistoryListViewModel {
         searchText = ""
         selectedIndex = 0
         quickPasteBase = 0
+        closeActionStrip()
     }
 
     func navigateUp(by step: Int = 1) {
@@ -214,6 +229,64 @@ final class HistoryListViewModel {
 
     func togglePreview() {
         preview?.toggle(currentSnapshot())
+    }
+
+    /// Smart actions for a clip, detected from its text content. Non-text
+    /// kinds never produce actions.
+    func actions(for snapshot: ClipItemSnapshot) -> [ClipAction] {
+        switch snapshot.kind {
+        case .text, .richText:
+            return ClipContentDetector.actions(for: snapshot.preview ?? "")
+        default:
+            return []
+        }
+    }
+
+    /// Runs the first detected action for the selected clip (⌘↩ in the panel).
+    func runPrimaryAction() {
+        guard let snapshot = currentSnapshot() else { return }
+        guard let action = actions(for: snapshot).first else { return }
+        run(action)
+    }
+
+    /// Runs the action currently highlighted in the open strip (Return).
+    func runHighlightedAction() {
+        guard let snapshot = currentSnapshot() else { return }
+        let detected = actions(for: snapshot)
+        guard detected.indices.contains(actionIndex) else { return }
+        run(detected[actionIndex])
+    }
+
+    /// Step key (↓ in cards, → in list): opens the strip on the first action,
+    /// then cycles the highlight through the remaining actions. The opposite
+    /// key closes the strip. Clips without detected actions never expand, and
+    /// selection never moves.
+    func stepActions() {
+        guard let snapshot = currentSnapshot() else { return }
+        let detected = actions(for: snapshot)
+        guard !detected.isEmpty else { return }
+        if !actionsExpanded {
+            actionsExpanded = true
+            actionIndex = 0
+        } else {
+            actionIndex = (actionIndex + 1) % detected.count
+        }
+    }
+
+    func closeActionStrip() {
+        actionsExpanded = false
+        actionIndex = 0
+    }
+
+    func run(_ action: ClipAction) {
+        actionRunner.run(action)
+        preview?.hide()
+        panel.hide()
+        if action.restoresPreviousApp {
+            // Copy actions leave the value on the pasteboard; hand back to the
+            // previous app so the user's next ⌘V lands there, not in the panel.
+            panel.restorePreviousApp()
+        }
     }
 
     func pasteSelected() async {

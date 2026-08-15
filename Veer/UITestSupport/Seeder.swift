@@ -12,14 +12,18 @@ enum Seeder {
             insertColor(repository: repository)
             insertFile(repository: repository)
             insertPdf(repository: repository)
+        case "smartActions":
+            insertText(repository: repository, text: "https://example.com/veer")
+            insertText(repository: repository, text: "hello@example.com")
+            insertText(repository: repository, text: "#FF5733")
         default:
             return
         }
     }
 
-    private static func insertText(repository: any ClipRepository) {
+    private static func insertText(repository: any ClipRepository, text: String = "Plain text fixture") {
         let payload = ClipPayload(typed: [
-            NSPasteboard.PasteboardType.string.rawValue: Data("Plain text fixture".utf8),
+            NSPasteboard.PasteboardType.string.rawValue: Data(text.utf8),
         ])
         _ = try? repository.insert(payload: payload, sourceBundleId: "com.apple.TextEdit")
     }

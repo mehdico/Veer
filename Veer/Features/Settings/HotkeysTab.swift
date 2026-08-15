@@ -17,13 +17,16 @@ struct HotkeysTab: View {
                 row(title: "Bottom edge", shortcut: .positionBottom)
             }
             Section("While the panel is open") {
-                staticRow(keys: "↑ ↓", description: "Navigate clips")
+                staticRow(keys: "← → / ↑ ↓", description: "Navigate clips (other axis)")
+                staticRow(keys: "↓ / →", description: "Reveal & step actions")
+                staticRow(keys: "↑ / ←", description: "Close action strip")
                 staticRow(keys: "Page Up / Down", description: "Jump a page")
-                staticRow(keys: "Return", description: "Paste selected clip")
-                staticRow(keys: "Esc", description: "Close panel")
+                staticRow(keys: "Return", description: "Paste / run highlighted action")
+                staticRow(keys: "Esc", description: "Close strip, search, panel")
                 staticRow(keys: "Space", description: "Toggle preview")
                 staticRow(keys: "⌃⌫", description: "Delete selected clip")
                 staticRow(keys: "⌘1 … ⌘9", description: "Paste by number")
+                staticRow(keys: "⌘↩", description: "Run first detected action")
             }
         }
         .formStyle(.grouped)

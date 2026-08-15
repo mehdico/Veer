@@ -30,3 +30,25 @@ func clipCellView(
         TextCellView(snapshot: snapshot, isSelected: isSelected)
     }
 }
+
+/// Right-click menu for a clip: a Smart Actions submenu listing the detected
+/// actions (mouse users don't have to discover the keyboard strip), plus
+/// Delete.
+@ViewBuilder
+func clipContextMenu(snapshot: ClipItemSnapshot, viewModel: HistoryListViewModel) -> some View {
+    let actions = viewModel.actions(for: snapshot)
+    if !actions.isEmpty {
+        Menu("Smart Actions") {
+            ForEach(actions) { action in
+                Button {
+                    viewModel.run(action)
+                } label: {
+                    Label(action.title, systemImage: action.systemImage)
+                }
+            }
+        }
+    }
+    Button("Delete", role: .destructive) {
+        viewModel.delete(snapshot)
+    }
+}

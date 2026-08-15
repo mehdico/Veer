@@ -68,13 +68,15 @@ final class AppEnvironment {
                 fatalError("Veer could not initialize any model store: \(error)")
             }
         }
+        let writer = LivePasteboardWriter()
         return makeEnvironment(
             container: container,
             isUITesting: false,
             access: AXAccessChecker(),
             hotkeys: CarbonHotkeyService(),
             paster: CGEventPaster(),
-            pasteboardWriter: LivePasteboardWriter(),
+            pasteboardWriter: writer,
+            actionRunner: LiveClipActionRunner(pasteboardWriter: writer),
             settings: SettingsStore(),
             launcher: SMAppServiceLauncher(),
             alerter: alerter
@@ -92,6 +94,7 @@ final class AppEnvironment {
             hotkeys: NoopHotkeyService(),
             paster: CountingPaster(),
             pasteboardWriter: LivePasteboardWriter(),
+            actionRunner: NoopClipActionRunner(),
             settings: SettingsStore(defaults: testDefaults),
             launcher: NoopLaunchAtLoginService(),
             alerter: SilentAlerter()
@@ -110,6 +113,7 @@ final class AppEnvironment {
         hotkeys: any HotkeyService,
         paster: any PasteSimulating,
         pasteboardWriter: LivePasteboardWriter,
+        actionRunner: any ClipActionRunning,
         settings: SettingsStore,
         launcher: any LaunchAtLoginService,
         alerter: any Alerting
@@ -137,7 +141,8 @@ final class AppEnvironment {
             panel: panel,
             settings: settings,
             access: access,
-            alerter: alerter
+            alerter: alerter,
+            actionRunner: actionRunner
         )
         viewModel.preview = preview
         return AppEnvironment(
@@ -176,6 +181,11 @@ final class NoopHotkeyService: HotkeyService {
 final class CountingPaster: PasteSimulating {
     private(set) var pasteCount = 0
     func simulatePaste() { pasteCount += 1 }
+}
+
+@MainActor
+final class NoopClipActionRunner: ClipActionRunning {
+    func run(_ action: ClipAction) {}
 }
 
 @MainActor

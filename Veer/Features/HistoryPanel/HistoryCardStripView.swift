@@ -144,10 +144,17 @@ struct HistoryCardStripView: View {
                     shortcutBadge(shortcut + 1)
                 }
             }
-            .contextMenu {
-                Button("Delete", role: .destructive) {
-                    viewModel.delete(snapshot)
+            .overlay(alignment: .bottom) {
+                if index == viewModel.selectedIndex && viewModel.actionsExpanded {
+                    ClipActionStripView(
+                        actions: viewModel.actions(for: snapshot),
+                        compact: true,
+                        highlightedIndex: viewModel.actionIndex
+                    ) { viewModel.run($0) }
                 }
+            }
+            .contextMenu {
+                clipContextMenu(snapshot: snapshot, viewModel: viewModel)
             }
             .id(snapshot.id)
         }

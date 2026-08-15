@@ -39,20 +39,28 @@ struct HistoryListView: View {
                             .padding(.vertical, 24)
                     } else {
                         ForEach(Array(items.enumerated()), id: \.element.id) { index, snapshot in
+                            let isSelected = index == viewModel.selectedIndex
                             ClipRowInteraction(
                                 index: index,
                                 onSelect: { viewModel.selectedIndex = index },
                                 onDoublePaste: { Task { await viewModel.selectAndPaste(quickIndex: index) } }
                             ) {
-                                clipCellView(
-                                    snapshot: snapshot,
-                                    isSelected: index == viewModel.selectedIndex,
-                                    viewModel: viewModel
-                                )
-                                .contextMenu {
-                                    Button("Delete", role: .destructive) {
-                                        viewModel.delete(snapshot)
+                                VStack(spacing: 0) {
+                                    clipCellView(
+                                        snapshot: snapshot,
+                                        isSelected: isSelected,
+                                        viewModel: viewModel
+                                    )
+                                    if isSelected && viewModel.actionsExpanded {
+                                        ClipActionStripView(
+                                            actions: viewModel.actions(for: snapshot),
+                                            compact: false,
+                                            highlightedIndex: viewModel.actionIndex
+                                        ) { viewModel.run($0) }
                                     }
+                                }
+                                .contextMenu {
+                                    clipContextMenu(snapshot: snapshot, viewModel: viewModel)
                                 }
                                 .transition(
                                     .asymmetric(

@@ -10,6 +10,7 @@ A native SwiftUI clipboard manager for macOS. Rewrite of [Yippy](../Yippy/) on a
 - Password managers and Keychain Access are ignored by default — a Settings → Ignored apps toggle, on by default, with per-app opt-outs.
 - Fuzzy search across history, live as you type.
 - Floating preview window (Spacebar) for full-fidelity text / image / color / PDF / file rendering.
+- Smart actions — clips that are a URL, email, phone number, or hex color get an inline action strip on the clip itself (↓/↑ in card view, →/← in the list; Return runs the highlighted action, ⌘↩ the first) for open-in-browser, compose email, call, and copy-as-Markdown-link / Swift `Color`.
 - 11 panel positions with `⌃⌥⌘ + arrow` shortcuts; vertical list + horizontal card strip layouts.
 - ⌘1 … ⌘9 quick-paste; ⌃⌫ delete selected; Esc closes.
 - Launch-at-login via `SMAppService`.
@@ -55,9 +56,10 @@ Veer/
 │   ├── Constants/      — Constants, AccessibilityIdentifiers
 │   ├── Errors/         — Alerter (NSAlert wrapper)
 │   └── Logging/        — VeerLogger (OSLog wrapper)
-├── Domain/Models/      — ClipPayload, ClipItemSnapshot, CellKind, PanelPosition
+├── Domain/Models/      — ClipPayload, ClipItemSnapshot, CellKind, PanelPosition, ClipAction, ClipContentDetector
 ├── Persistence/        — ClipItem / PayloadBlob @Model, ClipRepository(Live), ModelContainer factories
 ├── Services/
+│   ├── ClipActions/    — ClipActionRunner (NSWorkspace handoff + pasteboard copies)
 │   ├── Hotkeys/        — Carbon-backed global hotkey service
 │   ├── LaunchAtLogin/  — SMAppService wrapper
 │   ├── Paste/          — CGEvent paste + pasteboard writer
