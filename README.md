@@ -10,6 +10,7 @@ A native SwiftUI clipboard manager for macOS. Inspired by [Yippy](../Yippy/), bu
 - Password managers and Keychain Access are ignored by default — a Settings → Ignored apps toggle, on by default, with per-app opt-outs.
 - Fuzzy search across history, live as you type.
 - Floating preview window (Spacebar) for full-fidelity text / image / color / PDF / file rendering.
+- On-clip content previews — image, PDF, and file thumbnails plus color swatches render right on the history cells; plain-text clips that are exactly a hex color (3, 6, or 8 digits, optional leading `#`) get a swatch with the hex readout. Toggleable via Settings → General → Appearance → Show previews in clips (on by default; off shows icons + labels).
 - Smart actions — clips that are a URL, email, phone number, or hex color get an inline action strip on the clip itself (↓/↑ in card view, →/← in the list; Return runs the highlighted action, ⌘↩ the first) for open-in-browser, compose email, call, and copy-as-Markdown-link / Swift `Color`.
 - 11 panel positions with `⌃⌥⌘ + arrow` shortcuts; vertical list + horizontal card strip layouts.
 - ⌘1 … ⌘9 quick-paste; ⌃⌫ delete selected; Esc closes.
@@ -72,7 +73,7 @@ Veer/
 │   ├── Help/           — Help window
 │   ├── HistoryPanel/   — Panel window/coordinator + list & card-strip views + cell variants
 │   ├── Preview/        — Preview window/coordinator + variants (text, image, pdf, color, file)
-│   ├── Settings/       — Settings scene (General + Hotkeys tabs)
+│   ├── Settings/       — Settings scene (General + Ignored Apps + Shortcuts tabs)
 │   ├── StatusBar/      — NSStatusItem + menu builder
 │   └── Welcome/        — Accessibility-permission onboarding
 └── UITestSupport/      — In-memory seeders for UI tests (gated by --uitesting)
