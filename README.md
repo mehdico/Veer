@@ -1,6 +1,6 @@
 # Veer
 
-A native SwiftUI clipboard manager for macOS. Rewrite of [Yippy](../Yippy/) on a modern stack: SwiftUI + SwiftData + `@Observable` + Swift Testing.
+A native SwiftUI clipboard manager for macOS. Inspired by [Yippy](../Yippy/), built on a modern stack: SwiftUI + SwiftData + `@Observable` + Swift Testing.
 
 ## Features
 
