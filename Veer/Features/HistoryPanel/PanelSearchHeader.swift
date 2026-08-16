@@ -9,8 +9,11 @@ struct PanelSearchChrome: View {
                 PanelSearchBar(text: searchText)
             }
         }
+        // Appears/disappears instantly, in the same frame the panel window is
+        // resized by PanelWindowController — so the list below never changes
+        // size. (Animated heights on both sides desynced and re-laid the list
+        // every frame, which was the visible glitch.)
         .frame(height: searchText.isEmpty ? 0 : Constants.Panel.searchBarHeight)
-        .animation(.spring(response: 0.28, dampingFraction: 0.85), value: searchText.isEmpty)
         .accessibilityElement(children: .ignore)
         .accessibilityIdentifier("panelSearchField")
         .accessibilityLabel(searchText.isEmpty ? "Type to search" : "Search, \(searchText)")

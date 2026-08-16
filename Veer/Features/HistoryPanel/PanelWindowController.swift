@@ -5,7 +5,6 @@ import SwiftUI
 final class PanelWindowController: NSWindowController, NSWindowDelegate {
     private let env: AppEnvironment
     private let coordinator: PanelCoordinator
-    private var lastSearchChromeHeight: CGFloat?
     private var wasPanelShown = false
     private var resizePersistWork: DispatchWorkItem?
     private var outsideClickMonitor: Any?
@@ -38,8 +37,12 @@ final class PanelWindowController: NSWindowController, NSWindowDelegate {
             let screen = coordinator.currentScreen()
             if let screen {
                 let frame = panelFrame(for: screen)
-                let animateSearchResize = shouldAnimateSearchChromeResize()
-                setWindowFrame(frame, on: window, animated: animateSearchResize)
+                // Resize in the same frame the search chrome appears/disappears
+                // (display: false lets SwiftUI commit the new layout before the
+                // window redraws). No animation: animating the window height
+                // while the chrome height changes re-lays the list every frame,
+                // which is the visible sizing glitch.
+                window.setFrame(frame, display: false)
             }
             window.orderFrontRegardless()
             if !wasPanelShown {
@@ -50,7 +53,6 @@ final class PanelWindowController: NSWindowController, NSWindowDelegate {
             window.orderOut(nil)
             wasPanelShown = false
         }
-        lastSearchChromeHeight = coordinator.searchChromeHeight
         setOutsideClickMonitor(enabled: coordinator.isShown)
     }
 
@@ -96,11 +98,6 @@ final class PanelWindowController: NSWindowController, NSWindowDelegate {
         }
     }
 
-    private func shouldAnimateSearchChromeResize() -> Bool {
-        guard coordinator.isShown, let lastSearchChromeHeight else { return false }
-        return lastSearchChromeHeight != coordinator.searchChromeHeight
-    }
-
     private func panelFrame(for screen: NSScreen) -> NSRect {
         let base = coordinator.position.baseForSizing
         let contentOverride = env.settings
@@ -113,18 +110,6 @@ final class PanelWindowController: NSWindowController, NSWindowDelegate {
         )
         frame.size.height += coordinator.searchChromeHeight
         return frame
-    }
-
-    private func setWindowFrame(_ frame: NSRect, on window: NSWindow, animated: Bool) {
-        guard animated else {
-            window.setFrame(frame, display: true)
-            return
-        }
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.28
-            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            window.animator().setFrame(frame, display: true)
-        }
     }
 
     func windowDidResize(_ notification: Notification) {
