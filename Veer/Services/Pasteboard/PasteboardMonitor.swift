@@ -45,8 +45,10 @@ final class PasteboardMonitor: PasteboardMonitoring {
         stop()
         poll()
         pollTask = Task { @MainActor [weak self] in
-            guard let self else { return }
             while !Task.isCancelled {
+                // Guard per iteration: promoting `self` for the whole closure
+                // would keep the monitor (and this task) alive forever.
+                guard let self else { return }
                 let delay = self.pendingChangeCount != nil ? Duration.milliseconds(10) : self.interval
                 try? await Task.sleep(for: delay)
                 self.poll()
@@ -121,7 +123,10 @@ final class PasteboardMonitor: PasteboardMonitoring {
     }
 
     func acknowledge(changeCount: Int) {
-        lastChangeCount = max(lastChangeCount, changeCount)
+        // Assign rather than max(): an acknowledged count higher than the
+        // writer's own write would permanently swallow a foreign change that
+        // landed in the same window.
+        lastChangeCount = changeCount
         emptyRetries = 0
         if pendingChangeCount == changeCount {
             pendingChangeCount = nil

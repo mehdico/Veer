@@ -166,7 +166,9 @@ final class LiveClipActionRunner: ClipActionRunning {
             counter += 1
         }
         do {
-            try data.write(to: url)
+            // Atomic: a crash or full disk mid-write must not leave a truncated
+            // file that satisfies the existence check above and blocks retries.
+            try data.write(to: url, options: .atomic)
             VeerLogger(category: .general).info("Saved clip to \(url.path)")
         } catch {
             VeerLogger(category: .general).error("Save to Downloads failed", error)

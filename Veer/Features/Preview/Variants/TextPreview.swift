@@ -32,16 +32,35 @@ struct RichTextPreview: NSViewRepresentable {
 
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         guard let textView = scroll.documentView as? NSTextView else { return }
-        if let data = rtfData,
-           let attr = try? NSAttributedString(
-               data: data,
-               options: [.documentType: NSAttributedString.DocumentType.rtf],
-               documentAttributes: nil
-           )
-        {
-            textView.textStorage?.setAttributedString(attr)
+        // Guard against re-applying unchanged content: replacing the whole
+        // text storage on every SwiftUI update also resets scroll position.
+        if let data = rtfData {
+            guard context.coordinator.lastData != data else { return }
+            context.coordinator.lastData = data
+            context.coordinator.lastFallback = nil
+            if let attr = try? NSAttributedString(
+                data: data,
+                options: [.documentType: NSAttributedString.DocumentType.rtf],
+                documentAttributes: nil
+            ) {
+                textView.textStorage?.setAttributedString(attr)
+            } else if let fallback {
+                textView.string = fallback
+            }
         } else if let fallback {
+            guard context.coordinator.lastFallback != fallback else { return }
+            context.coordinator.lastFallback = fallback
+            context.coordinator.lastData = nil
             textView.string = fallback
         }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    final class Coordinator {
+        var lastData: Data?
+        var lastFallback: String?
     }
 }

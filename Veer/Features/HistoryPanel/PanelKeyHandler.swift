@@ -76,14 +76,20 @@ enum PanelKeyHandler {
             }
             return .handled
         case .downArrow:
-            // ↓ toggles the action strip in both layouts: opens it on the
-            // first action, closes it when already open. Clip navigation
-            // pauses while the strip is open.
-            if !press.phase.contains(.repeat) {
-                if viewModel.actionsExpanded {
+            if viewModel.actionsExpanded {
+                // Strip open (both layouts): ↓ closes it.
+                if !press.phase.contains(.repeat) {
                     viewModel.closeActionStrip()
-                } else {
+                }
+            } else if viewModel.panel.horizontal {
+                // Strip closed, cards: ↓ reveals the action strip.
+                if !press.phase.contains(.repeat) {
                     viewModel.stepActions()
+                }
+            } else {
+                // Strip closed, vertical list: ↓ moves down through history.
+                if navigationRepeatGate.shouldAccept(phase: press.phase, direction: .down) {
+                    viewModel.navigateDown()
                 }
             }
             return .handled
@@ -106,6 +112,12 @@ enum PanelKeyHandler {
                 // Strip closed, cards: → moves down through history.
                 if navigationRepeatGate.shouldAccept(phase: press.phase, direction: .down) {
                     viewModel.navigateDown()
+                }
+            } else {
+                // Strip closed, vertical list: → reveals the action strip,
+                // mirroring ↓ in the cards layout.
+                if !press.phase.contains(.repeat) {
+                    viewModel.stepActions()
                 }
             }
             return .handled

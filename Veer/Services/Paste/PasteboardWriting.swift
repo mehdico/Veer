@@ -19,8 +19,14 @@ final class LivePasteboardWriter: PasteboardWriting {
         for (type, data) in typed {
             item.setData(data, forType: NSPasteboard.PasteboardType(rawValue: type))
         }
+        let before = pasteboard.changeCount
         pasteboard.clearContents()
         pasteboard.writeObjects([item])
-        onWrite?(pasteboard.changeCount)
+        // A single write session bumps the change count by exactly one. A
+        // larger delta means another app wrote between our reads; acknowledging
+        // only `before` leaves that foreign change visible to the monitor
+        // instead of silently swallowing the user's copy.
+        let after = pasteboard.changeCount
+        onWrite?(after == before + 1 ? after : before)
     }
 }

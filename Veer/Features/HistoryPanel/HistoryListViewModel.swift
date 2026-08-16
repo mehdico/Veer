@@ -31,6 +31,9 @@ final class HistoryListViewModel {
     /// mutations re-render the action strip, so a translate action can appear
     /// a moment after the clip is selected.
     private var translationAvailabilityCache: [String: Bool] = [:]
+    /// Language codes with an availability check still in flight, so repeated
+    /// `actions(for:)` calls during body evaluations don't pile up tasks.
+    @ObservationIgnored private var translationChecksInFlight: Set<String> = []
 
     /// Whether on-card content previews (image/PDF/file thumbnails, color
     /// swatches) are enabled. Off → icons and labels only.
@@ -165,7 +168,7 @@ final class HistoryListViewModel {
         let fetched = (try? repository.fetchAll(limit: limit)) ?? []
         items = fetched.map(ClipItemSnapshot.init)
         itemsByID = Dictionary(uniqueKeysWithValues: items.map { ($0.id, $0) })
-        runSearch()
+        runSearch(preservingSelection: true)
     }
 
     private func applyRepositoryChange(_ change: RepositoryChange) {
@@ -177,7 +180,7 @@ final class HistoryListViewModel {
             items.insert(snapshot, at: 0)
             itemsByID[id] = snapshot
             trimToLimit()
-            runSearch()
+            runSearch(preservingSelection: true)
         case .movedToFront(let id):
             guard let item = try? repository.fetchOne(id: id) else { return }
             let snapshot = ClipItemSnapshot(item)
@@ -185,16 +188,22 @@ final class HistoryListViewModel {
             guard let index = items.firstIndex(where: { $0.id == id }) else { return }
             items.remove(at: index)
             items.insert(snapshot, at: 0)
-            runSearch()
+            runSearch(preservingSelection: true)
         case .deleted(let id):
             guard itemsByID[id] != nil else { return }
+            let wasSelected = currentSnapshot()?.id == id
             itemsByID[id] = nil
             items.removeAll { $0.id == id }
-            runSearch()
+            runSearch(preservingSelection: true)
+            if wasSelected {
+                // Selection landed on a different clip; the strip belongs to
+                // the deleted one and must close.
+                closeActionStrip()
+            }
         case .cleared:
             items = []
             itemsByID = [:]
-            runSearch()
+            runSearch(preservingSelection: true)
         case .capped:
             refresh()
         }
@@ -451,10 +460,13 @@ final class HistoryListViewModel {
     /// lands, so a translate action can appear a moment after selection.
     private func isTranslationReady(_ languageCode: String) -> Bool {
         if let cached = translationAvailabilityCache[languageCode] { return cached }
+        guard !translationChecksInFlight.contains(languageCode) else { return false }
+        translationChecksInFlight.insert(languageCode)
         Task { @MainActor [weak self] in
+            let ready = await self?.translationAvailabilityCheck(languageCode) ?? false
             guard let self else { return }
-            let ready = await translationAvailabilityCheck(languageCode)
-            translationAvailabilityCache[languageCode] = ready
+            self.translationChecksInFlight.remove(languageCode)
+            self.translationAvailabilityCache[languageCode] = ready
         }
         return false
     }
@@ -616,7 +628,12 @@ final class HistoryListViewModel {
         searchText.isEmpty ? [] : (highlightsByID[snapshot.id] ?? [])
     }
 
-    private func runSearch() {
+    /// Rebuilds the filtered list. When `preservingSelection` is set (repository
+    /// mutations, refreshes), the selected clip stays selected by identity so
+    /// background ingestion doesn't yank the user back to the top; only real
+    /// search-text changes reset to the first result.
+    private func runSearch(preservingSelection: Bool = false) {
+        let selectedID = preservingSelection ? currentSnapshot()?.id : nil
         if searchText.isEmpty {
             filteredItems = items
             highlightsByID = [:]
@@ -635,7 +652,11 @@ final class HistoryListViewModel {
             highlightsByID = highlights
         }
         filteredIDs = filteredItems.map(\.id)
-        selectedIndex = 0
+        if let selectedID, let index = filteredIDs.firstIndex(of: selectedID) {
+            selectedIndex = index
+        } else if !preservingSelection {
+            selectedIndex = 0
+        }
         clampSelection()
     }
 

@@ -87,11 +87,10 @@ final class ClipRepositoryLive: ClipRepository {
     }
 
     func fetchBlob(id: UUID, type: String) throws -> Data? {
-        var descriptor = FetchDescriptor<PayloadBlob>(
-            predicate: #Predicate { $0.typeRawValue == type && $0.item?.id == id }
-        )
-        descriptor.fetchLimit = 1
-        return try context.fetch(descriptor).first?.data
+        // #Predicate can't traverse the optional `item` relationship, so fetch
+        // the owning item and scan its blobs instead.
+        guard let item = try fetchOne(id: id) else { return nil }
+        return item.blobs.first { $0.typeRawValue == type }?.data
     }
 
     func fetchThumbnail(id: UUID) throws -> Data? {

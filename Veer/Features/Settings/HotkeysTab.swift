@@ -17,9 +17,9 @@ struct HotkeysTab: View {
                 row(title: "Bottom edge", shortcut: .positionBottom)
             }
             Section("While the panel is open") {
-                staticRow(keys: "↓", description: "Open / close the action strip")
+                staticRow(keys: "↓ / →", description: "Open the action strip (↓ cards, → list)")
                 staticRow(keys: "← →", description: "Step between actions while the strip is open")
-                staticRow(keys: "↑", description: "Close the action strip")
+                staticRow(keys: "↑ / ↓", description: "Close the action strip")
                 staticRow(keys: "← → / ↑ ↓", description: "Navigate clips (strip closed; axis by layout)")
                 staticRow(keys: "Page Up / Down", description: "Jump a page")
                 staticRow(keys: "Return", description: "Paste / run highlighted action")

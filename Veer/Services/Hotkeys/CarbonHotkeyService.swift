@@ -12,7 +12,9 @@ final class CarbonHotkeyService: HotkeyService {
     private static let signature: OSType = 0x56454552 // 'VEER'
 
     nonisolated(unsafe) private var registrations: [HotkeyShortcut: CarbonHotkeyRegistration] = [:]
-    nonisolated(unsafe) private var nextID: UInt32 = 1
+    // Static: `dispatchTable` below is shared across instances, so per-instance
+    // counters would collide and overwrite each other's handlers.
+    nonisolated(unsafe) private static var nextID: UInt32 = 1
     nonisolated(unsafe) private var eventHandler: EventHandlerRef?
     private let logger = VeerLogger(category: .hotkeys)
 
@@ -40,8 +42,8 @@ final class CarbonHotkeyService: HotkeyService {
             UnregisterEventHotKey(existing.ref)
             Self.dispatchTable.removeValue(forKey: existing.id)
         }
-        let id = nextID
-        nextID += 1
+        let id = Self.nextID
+        Self.nextID += 1
         let hotKeyID = EventHotKeyID(signature: Self.signature, id: id)
         var ref: EventHotKeyRef?
         let status = RegisterEventHotKey(

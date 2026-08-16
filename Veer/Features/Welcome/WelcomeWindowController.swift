@@ -3,6 +3,12 @@ import SwiftUI
 
 @MainActor
 final class WelcomeWindowController: NSWindowController {
+    /// Breaks the window → hosted view → `onTrusted` → controller reference
+    /// chain so the welcome window can deallocate after closing.
+    private final class WeakRef {
+        weak var controller: WelcomeWindowController?
+    }
+
     convenience init(access: any AccessChecking, onClose: @escaping () -> Void) {
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 480, height: 320),
@@ -15,9 +21,9 @@ final class WelcomeWindowController: NSWindowController {
         window.center()
         window.setAccessibilityIdentifier(AccessibilityIdentifiers.welcomeWindow)
 
-        var controllerRef: WelcomeWindowController?
+        let ref = WeakRef()
         let host = NSHostingView(rootView: WelcomeView(access: access, onTrusted: {
-            controllerRef?.close()
+            ref.controller?.close()
             onClose()
         }))
         host.frame = window.contentView?.bounds ?? .zero
@@ -25,6 +31,6 @@ final class WelcomeWindowController: NSWindowController {
         window.contentView = host
 
         self.init(window: window)
-        controllerRef = self
+        ref.controller = self
     }
 }

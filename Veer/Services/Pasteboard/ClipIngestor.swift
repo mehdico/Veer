@@ -48,12 +48,18 @@ final class ClipIngestor {
             logger.info("ingest rejected: non-text payload in text-only mode (bundle=\(event.sourceBundleId ?? "nil"))")
             return .rejectedNonText
         }
-        return (try? repository.insert(
-            payload: event.payload,
-            sourceBundleId: event.sourceBundleId,
-            thumbnailPNG: nil,
-            payloadDigest: nil
-        )) ?? .rejectedEmpty
+        do {
+            let outcome = try repository.insert(
+                payload: event.payload,
+                sourceBundleId: event.sourceBundleId,
+                thumbnailPNG: nil,
+                payloadDigest: nil
+            )
+            return outcome
+        } catch {
+            logger.error("ingest threw", error)
+            return .rejectedEmpty
+        }
     }
 
     private func ingestAsync(_ event: MonitorEvent) async {
