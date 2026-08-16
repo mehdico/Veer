@@ -12,9 +12,20 @@ struct AboutView: View {
         return "\(v) (\(b))"
     }
 
+    /// The app icon read straight from the bundle's icns. `NSApp.applicationIconImage`
+    /// can serve a stale system-cached icon (especially for LSUIElement apps),
+    /// so we read the file directly to always show the current artwork.
+    private static func appIcon() -> NSImage? {
+        if let url = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
+           let image = NSImage(contentsOf: url) {
+            return image
+        }
+        return NSApp.applicationIconImage
+    }
+
     var body: some View {
         VStack(spacing: 14) {
-            if let icon = NSApp.applicationIconImage {
+            if let icon = Self.appIcon() {
                 Image(nsImage: icon)
                     .resizable()
                     .interpolation(.high)
