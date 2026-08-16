@@ -9,7 +9,7 @@ struct HelpView: View {
                 Group {
                     Text("Veer keeps a history of everything you copy, ready to recall with a single keystroke.")
                     bullet("Open the panel with **⌘⇧V** anywhere.")
-                    bullet("Use **↑ / ↓** to move through history; **Return** pastes into the previous app.")
+                    bullet("Use **↑ / ↓** (list) or **← / →** (cards) to move through history; **Return** pastes into the previous app.")
                     bullet("Type to filter the history with fuzzy search.")
                     bullet("Press **Space** to open a full-fidelity preview window.")
                     bullet("**⌃⌫** deletes the currently selected clip.")

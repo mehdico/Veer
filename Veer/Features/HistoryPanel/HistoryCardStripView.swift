@@ -181,7 +181,7 @@ struct HistoryCardStripView: View {
                 .foregroundStyle(.secondary)
             Text(searching
                  ? "Press Esc to clear the search."
-                 : "Copy text or images in any app and they'll appear here.")
+                 : "Copy anything in any app — text, images, files, colors — and it'll appear here.")
                 .font(.system(size: 11))
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
