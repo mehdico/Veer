@@ -99,6 +99,8 @@ final class AppEnvironment {
             launcher: NoopLaunchAtLoginService(),
             alerter: SilentAlerter()
         )
+        // Keep UI tests deterministic: no first-run hint overlay.
+        env.settings.hasSeenActionsHint = true
         if let fixture = LaunchArguments.seedFixture {
             Seeder.seed(fixture, into: env.repository)
             env.historyViewModel.refresh()

@@ -23,11 +23,14 @@ struct HotkeysTab: View {
                 staticRow(keys: "← → / ↑ ↓", description: "Navigate clips (strip closed; axis by layout)")
                 staticRow(keys: "Page Up / Down", description: "Jump a page")
                 staticRow(keys: "Return", description: "Paste / run highlighted action")
+                staticRow(keys: "⌥↩", description: "Paste as plain text")
+                staticRow(keys: "⌘C", description: "Copy selected clip without pasting")
                 staticRow(keys: "Esc", description: "Close strip, search, panel")
                 staticRow(keys: "Space", description: "Toggle preview")
                 staticRow(keys: "⌃⌫", description: "Delete selected clip")
                 staticRow(keys: "⌘1 … ⌘9", description: "Paste by number")
                 staticRow(keys: "⌘↩", description: "Run first detected action")
+                staticRow(keys: "⌥← →", description: "Move the caret while searching")
             }
         }
         .formStyle(.grouped)

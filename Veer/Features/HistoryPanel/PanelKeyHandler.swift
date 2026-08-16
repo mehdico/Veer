@@ -46,31 +46,57 @@ enum PanelKeyHandler {
     private static var navigationRepeatGate = PanelNavigationRepeatGate()
 
     static func handle(_ press: KeyPress, viewModel: HistoryListViewModel) -> KeyPress.Result {
-        let key = press.key
-        let mods = press.modifiers
-        let chars = press.characters
+        handle(
+            key: press.key,
+            characters: press.characters,
+            modifiers: press.modifiers,
+            phase: press.phase,
+            viewModel: viewModel
+        )
+    }
 
-        if isBackspace(press) {
-            if mods.contains(.command), !press.phase.contains(.repeat) {
+    /// Value-level variant so tests can drive the handler without a real
+    /// KeyPress (which has no public initializer).
+    static func handle(
+        key: KeyEquivalent,
+        characters: String,
+        modifiers mods: EventModifiers,
+        phase: KeyPress.Phases,
+        viewModel: HistoryListViewModel
+    ) -> KeyPress.Result {
+        let chars = characters
+
+        if key == .delete || chars.unicodeScalars.contains(where: { $0.value == 0x08 || $0.value == 0x7F }) {
+            // Documented as ⌃⌫; ⌘⌫ kept working for existing muscle memory.
+            if mods.intersection([.command, .control]) != [],
+               !phase.contains(.repeat)
+            {
                 viewModel.deleteSelected()
                 return .handled
             }
-            if !viewModel.searchText.isEmpty {
-                viewModel.searchText = String(viewModel.searchText.dropLast())
-            }
-            return .handled
+            // Plain backspace edits the search field natively (caret, selection).
+            return .ignored
+        }
+
+        // While searching, ⌥←/→ moves the caret word-wise inside the query
+        // instead of navigating (plain arrows always navigate).
+        if mods.contains(.option),
+           !viewModel.searchText.isEmpty,
+           key == .leftArrow || key == .rightArrow
+        {
+            return .ignored
         }
 
         switch key {
         case .upArrow:
             if viewModel.actionsExpanded {
                 // Strip open: ↑ exits it.
-                if !press.phase.contains(.repeat) {
+                if !phase.contains(.repeat) {
                     viewModel.closeActionStrip()
                 }
             } else if !viewModel.panel.horizontal {
                 // Strip closed, vertical list: ↑ moves up through history.
-                if navigationRepeatGate.shouldAccept(phase: press.phase, direction: .up) {
+                if navigationRepeatGate.shouldAccept(phase: phase, direction: .up) {
                     viewModel.navigateUp()
                 }
             }
@@ -78,17 +104,17 @@ enum PanelKeyHandler {
         case .downArrow:
             if viewModel.actionsExpanded {
                 // Strip open (both layouts): ↓ closes it.
-                if !press.phase.contains(.repeat) {
+                if !phase.contains(.repeat) {
                     viewModel.closeActionStrip()
                 }
             } else if viewModel.panel.horizontal {
                 // Strip closed, cards: ↓ reveals the action strip.
-                if !press.phase.contains(.repeat) {
+                if !phase.contains(.repeat) {
                     viewModel.stepActions()
                 }
             } else {
                 // Strip closed, vertical list: ↓ moves down through history.
-                if navigationRepeatGate.shouldAccept(phase: press.phase, direction: .down) {
+                if navigationRepeatGate.shouldAccept(phase: phase, direction: .down) {
                     viewModel.navigateDown()
                 }
             }
@@ -99,7 +125,7 @@ enum PanelKeyHandler {
                 viewModel.stepActionsBackward()
             } else if viewModel.panel.horizontal {
                 // Strip closed, cards: ← moves up through history.
-                if navigationRepeatGate.shouldAccept(phase: press.phase, direction: .up) {
+                if navigationRepeatGate.shouldAccept(phase: phase, direction: .up) {
                     viewModel.navigateUp()
                 }
             }
@@ -110,13 +136,13 @@ enum PanelKeyHandler {
                 viewModel.stepActions()
             } else if viewModel.panel.horizontal {
                 // Strip closed, cards: → moves down through history.
-                if navigationRepeatGate.shouldAccept(phase: press.phase, direction: .down) {
+                if navigationRepeatGate.shouldAccept(phase: phase, direction: .down) {
                     viewModel.navigateDown()
                 }
             } else {
                 // Strip closed, vertical list: → reveals the action strip,
                 // mirroring ↓ in the cards layout.
-                if !press.phase.contains(.repeat) {
+                if !phase.contains(.repeat) {
                     viewModel.stepActions()
                 }
             }
@@ -128,7 +154,9 @@ enum PanelKeyHandler {
             viewModel.navigateDown(by: 10)
             return .handled
         case .return:
-            if mods.contains(.command) {
+            if mods.contains(.option) {
+                Task { await viewModel.pasteSelected(asPlainText: true) }
+            } else if mods.contains(.command) {
                 viewModel.runPrimaryAction()
             } else if viewModel.actionsExpanded {
                 viewModel.runHighlightedAction()
@@ -148,10 +176,10 @@ enum PanelKeyHandler {
         case .space:
             if viewModel.searchText.isEmpty {
                 viewModel.togglePreview()
-            } else {
-                viewModel.searchText += " "
+                return .handled
             }
-            return .handled
+            // Searching: let the field insert the space natively.
+            return .ignored
         case .tab:
             return .ignored
         default:
@@ -173,14 +201,18 @@ enum PanelKeyHandler {
             return .handled
         }
 
+        // ⌘C copies the selected clip to the pasteboard without pasting (and
+        // without leaving the panel), mirroring the system-wide copy reflex.
+        if mods.contains(.command) && chars.lowercased() == "c" {
+            viewModel.copySelected()
+            return .handled
+        }
+
         let suppressedMods: EventModifiers = [.command, .control, .option]
         guard mods.intersection(suppressedMods).isEmpty else { return .ignored }
 
-        let printable = String(chars.filter(Self.isPrintable))
-        if !printable.isEmpty {
-            viewModel.searchText += printable
-            return .handled
-        }
+        // Everything else (printables, backspace editing, ⌥←/→ word-jumps in
+        // the field when it holds the caret) goes to the focused search field.
         return .ignored
     }
 

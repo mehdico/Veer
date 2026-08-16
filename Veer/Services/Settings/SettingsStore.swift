@@ -13,6 +13,7 @@ final class SettingsStore {
     var showPreviews: Bool { didSet { persist() } }
     var textOnlyHistory: Bool { didSet { persist() } }
     var alwaysSearchWeb: Bool { didSet { persist() } }
+    var hasSeenActionsHint: Bool { didSet { persist() } }
     private(set) var ignoredAppBundleIds: [String] { didSet { persist() } }
     var ignoresPasswordManagers: Bool {
         didSet {
@@ -41,6 +42,7 @@ final class SettingsStore {
         self.showPreviews = loaded.showPreviews
         self.textOnlyHistory = loaded.textOnlyHistory
         self.alwaysSearchWeb = loaded.alwaysSearchWeb
+        self.hasSeenActionsHint = loaded.hasSeenActionsHint
         self.ignoredAppBundleIds = loaded.ignoredAppBundleIds
         self.panelSizeByPosition = loaded.panelSizeByPosition
     }
@@ -57,6 +59,7 @@ final class SettingsStore {
             ignoredAppBundleIds: ignoredAppBundleIds,
             ignoresPasswordManagers: ignoresPasswordManagers,
             didSeedDefaultIgnoredApps: didSeedDefaultIgnoredApps,
+            hasSeenActionsHint: hasSeenActionsHint,
             panelSizeByPosition: panelSizeByPosition
         )
     }

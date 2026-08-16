@@ -3,25 +3,22 @@ import SwiftUI
 struct HistoryListView: View {
     @Bindable var viewModel: HistoryListViewModel
     @Bindable var coordinator: PanelCoordinator
-    @FocusState private var focused: Bool
+    @FocusState private var searchFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: 0) {
-            PanelSearchChrome(searchText: viewModel.searchText)
+            PanelSearchChrome(searchText: $viewModel.searchText, focused: $searchFocused)
             list
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .focusable()
-        .focusEffectDisabled()
-        .focused($focused)
         .onAppear {
-            focused = true
+            searchFocused = true
             viewModel.quickPasteBase = 0
         }
         .onChange(of: coordinator.isShown) { _, shown in
             if shown {
-                focused = true
+                searchFocused = true
             }
         }
         .onKeyPress(phases: [.down, .repeat]) { press in
@@ -50,6 +47,18 @@ struct HistoryListView: View {
                                         isSelected: isSelected,
                                         viewModel: viewModel
                                     )
+                                    .safeAreaInset(edge: .trailing, spacing: 4) {
+                                        // Uniform trailing rail: dim ⌘N quick-paste
+                                        // badges on the first nine rows, and a
+                                        // chevron cue on the selected row when it
+                                        // has smart actions to reveal.
+                                        trailingRail(
+                                            index: index,
+                                            snapshot: snapshot,
+                                            isSelected: isSelected
+                                        )
+                                        .frame(width: 24)
+                                    }
                                     if isSelected && viewModel.actionsExpanded {
                                         ClipActionStripView(
                                             actions: viewModel.actions(for: snapshot),
@@ -105,6 +114,28 @@ struct HistoryListView: View {
                     proxy.scrollTo(firstID, anchor: .top)
                 }
             }
+        }
+    }
+
+    /// Content of the uniform trailing rail every list row reserves: the ⌘N
+    /// quick-paste number on the first nine rows, replaced by a chevron on
+    /// the selected row while it has an unopened smart-action strip.
+    @ViewBuilder
+    private func trailingRail(index: Int, snapshot: ClipItemSnapshot, isSelected: Bool) -> some View {
+        let quickNumber = index - viewModel.quickPasteBase + 1
+        if isSelected, !viewModel.actionsExpanded,
+           !viewModel.actions(for: snapshot).isEmpty
+        {
+            Image(systemName: "chevron.right")
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .help("Smart actions — press →")
+                .accessibilityIdentifier(AccessibilityIdentifiers.actionHintCue)
+        } else if (1...9).contains(quickNumber) {
+            Text("⌘\(quickNumber)")
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .foregroundStyle(isSelected ? .secondary : .tertiary)
+                .accessibilityIdentifier("\(AccessibilityIdentifiers.quickPasteBadge)_\(quickNumber)")
         }
     }
 

@@ -8,12 +8,12 @@ A native SwiftUI clipboard manager for macOS. Inspired by [Yippy](../Yippy/), bu
 - Global ⌘⇧V toggles a floating panel over any app.
 - Captures everything you copy (text, RTF, HTML, PNG, TIFF, PDF, file URLs, NSColor) with per-app source tracking.
 - Password managers and Keychain Access are ignored by default — a Settings → Ignored apps toggle, on by default, with per-app opt-outs.
-- Fuzzy search across history, live as you type.
+- Fuzzy search across history, live as you type — a real search field with a caret and selection (⌥←/→ move the caret word-wise while searching).
 - Floating preview window (Spacebar) for full-fidelity text / image / color / PDF / file rendering.
 - On-clip content previews — image, PDF, and file thumbnails plus color swatches render right on the history cells; plain-text clips that are exactly a hex color (3, 6, or 8 digits, optional leading `#`) get a swatch with the hex readout. Toggleable via Settings → General → Appearance → Show previews in clips (on by default; off shows icons + labels).
 - Smart actions — clips get an inline action strip (↓ opens it in both card and list layouts and closes it again; ←/→ move between the actions while it's open; Return runs the highlighted action, ⌘↩ the first). Text clips that are a URL (including git hosts), email, phone number, hex color, coordinate pair, JSON, arithmetic expression, ISO date, git SSH URL, or existing absolute path get tailored actions: open-in-browser, compose email, call, copy-as-Markdown-link / Swift `Color`, open-in-Maps, copy-math-result, pretty-print/minify JSON, copy-epoch-seconds, copy-git-clone, reveal/open in Finder. File and folder clips get Reveal in Finder, Open, Copy Path, Copy File, Copy as Markdown Link, Open in Terminal (folders), Open in Xcode (.swift/.xcodeproj/.xcworkspace/.playground). Images get Save to Downloads and Copy as PNG; PDFs Save to Downloads; NSColor clips get Copy as Hex / CSS rgb() / UIColor; rich text gets Copy as Plain Text. Non-English prose gets Translate to English when its language pack is installed (macOS 26+), and unrecognized text can get Search the Web via a Settings → General → Smart Actions toggle.
-- 11 panel positions with `⌃⌥⌘ + arrow` shortcuts; vertical list + horizontal card strip layouts.
-- ⌘1 … ⌘9 quick-paste; ⌃⌫ delete selected; Esc closes.
+- 11 panel positions with `⌃⌥⌘ + arrow` shortcuts; vertical list + horizontal card strip layouts; a plain vertical mouse wheel scrolls the horizontal strip.
+- ⌘1 … ⌘9 quick-paste (badges on the first cards/rows); ⌃⌫ delete selected; ⌘C copies the selected clip without pasting; ⌥Return pastes as plain text; Esc closes.
 - Launch-at-login via `SMAppService`.
 
 ## Requirements
@@ -95,4 +95,4 @@ Veer/
 
 ## Status
 
-Version 1.6.1. Built incrementally, each phase shipping a green build + tests. Current totals: 232 unit tests and 23 UI test cases across 14 files (counts as declared in the test sources; run the test commands above to verify). Outstanding follow-ups: a live hotkey recorder (the bindings are fixed defaults), localization scaffolding, and a VoiceOver audit.
+Version 1.7.0. Built incrementally, each phase shipping a green build + tests. Current totals: 232 unit tests and 23 UI test cases across 14 files (counts as declared in the test sources; run the test commands above to verify). Outstanding follow-ups: a live hotkey recorder (the bindings are fixed defaults), localization scaffolding, and a VoiceOver audit.

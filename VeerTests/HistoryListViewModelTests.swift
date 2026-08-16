@@ -21,7 +21,8 @@ struct HistoryListViewModelTests {
     private func makeViewModel(
         seedCount: Int = 0,
         pasteDelay: Duration = .zero,
-        alerter: (any Alerting)? = nil
+        alerter: (any Alerting)? = nil,
+        settings: SettingsStore? = nil
     ) async throws -> (HistoryListViewModel, ClipRepositoryLive, MockPaster, MockPasteboardWriter, PanelCoordinator) {
         let container = try VeerStore.inMemory()
         let repo = ClipRepositoryLive(container: container)
@@ -40,6 +41,7 @@ struct HistoryListViewModelTests {
             paster: paster,
             pasteboardWriter: writer,
             panel: panel,
+            settings: settings,
             pasteDelay: pasteDelay,
             alerter: alerter
         )
@@ -147,6 +149,67 @@ struct HistoryListViewModelTests {
         #expect(writtenString == "item-1")
         #expect(panel.isShown == false)
         #expect(paster.pasteCount == 1)
+    }
+
+    @Test func copySelectedWritesPasteboardKeepsPanelAndSkipsPaste() async throws {
+        let (vm, repo, paster, writer, panel) = try await makeViewModel(seedCount: 3)
+        vm.selectedIndex = 2
+        panel.show()
+
+        vm.copySelected()
+
+        let writtenString = writer.lastWrite?[NSPasteboard.PasteboardType.string.rawValue]
+            .flatMap { String(data: $0, encoding: .utf8) }
+        #expect(writer.writeCount == 1)
+        #expect(writtenString == "item-0")
+        #expect(panel.isShown == true)
+        #expect(paster.pasteCount == 0)
+        // Copying re-promotes the clip, matching the paste behavior.
+        #expect(try repo.fetchAll(limit: nil).map(\.preview) == ["item-0", "item-2", "item-1"])
+    }
+
+    @Test func pasteSelectedAsPlainTextStripsRichFormats() async throws {
+        let container = try VeerStore.inMemory()
+        let repo = ClipRepositoryLive(container: container)
+        _ = try repo.insert(
+            payload: ClipPayload(typed: [
+                NSPasteboard.PasteboardType.string.rawValue: Data("styled".utf8),
+                NSPasteboard.PasteboardType.rtf.rawValue: Data("{\\rtf1}".utf8),
+            ]),
+            sourceBundleId: "com.test"
+        )
+        let writer = MockPasteboardWriter()
+        let vm = HistoryListViewModel(
+            repository: repo,
+            paster: MockPaster(),
+            pasteboardWriter: writer,
+            panel: PanelCoordinator()
+        )
+        vm.refresh()
+
+        await vm.pasteSelected(asPlainText: true)
+
+        #expect(writer.lastWrite?.keys.sorted() == [NSPasteboard.PasteboardType.string.rawValue])
+    }
+
+    @Test func openingActionStripMarksActionsHintSeen() async throws {
+        let settings = SettingsStore(defaults: UserDefaults(suiteName: "veer.test.\(UUID().uuidString)")!)
+        #expect(settings.hasSeenActionsHint == false)
+        let (vm, _, _, _, _) = try await makeViewModel(seedCount: 1, settings: settings)
+
+        vm.actionsExpanded = true
+
+        #expect(settings.hasSeenActionsHint == true)
+    }
+
+    @Test func markActionsHintSeenPersistsAcrossInstances() async throws {
+        let defaults = UserDefaults(suiteName: "veer.test.\(UUID().uuidString)")!
+        let settings = SettingsStore(defaults: defaults)
+        let (vm, _, _, _, _) = try await makeViewModel(seedCount: 1, settings: settings)
+
+        vm.markActionsHintSeen()
+
+        #expect(SettingsStore(defaults: defaults).hasSeenActionsHint == true)
     }
 
     @Test func pasteSelectedMovesItemToFrontOfQueue() async throws {

@@ -18,7 +18,15 @@ struct SettingsStoreTests {
         #expect(store.textOnlyHistory == false)
         #expect(store.ignoresPasswordManagers == true)
         #expect(store.ignoredAppBundleIds == Constants.Privacy.defaultIgnoredApps.map(\.bundleId))
+        #expect(store.hasSeenActionsHint == false)
         #expect(store.panelSizeByPosition.isEmpty)
+    }
+
+    @Test func actionsHintFlagPersistsAcrossInstances() {
+        let defaults = makeDefaults()
+        let first = SettingsStore(defaults: defaults)
+        first.hasSeenActionsHint = true
+        #expect(SettingsStore(defaults: defaults).hasSeenActionsHint == true)
     }
 
     @Test func mutationsPersistAcrossInstances() {
@@ -85,6 +93,7 @@ struct SettingsStoreTests {
         #expect(store.pastesRichText == false)
         #expect(store.showAsCards == false)
         #expect(store.textOnlyHistory == false)
+        #expect(store.hasSeenActionsHint == false)
         #expect(store.ignoredAppBundleIds == Constants.Privacy.defaultIgnoredApps.map(\.bundleId))
     }
 

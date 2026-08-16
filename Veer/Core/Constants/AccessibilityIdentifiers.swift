@@ -33,6 +33,12 @@ enum AccessibilityIdentifiers {
     static let howToUseLabel = "howToUseLabel"
 
     static let yippyTableView = "yippyTableView"
+    static let panelSearchField = "panelSearchField"
+    static let panelSearchClearButton = "panelSearchClearButton"
+    static let quickPasteBadge = "quickPasteBadge"
+    static let actionHintCue = "actionHintCue"
+    static let actionsHint = "actionsHint"
+    static let actionsHintDismissButton = "actionsHintDismissButton"
     static let yippyItemTextView = "YippyItemTextView"
     static let yippyTextCellView = "YippyTextCellView"
     static let yippyColorCellView = "YippyColorCellView"

@@ -3,6 +3,7 @@ import SwiftUI
 struct CellChrome<Content: View>: View {
     let isSelected: Bool
     let identifier: String
+    @State private var isHovered = false
     @ViewBuilder let content: () -> Content
 
     var body: some View {
@@ -24,11 +25,15 @@ struct CellChrome<Content: View>: View {
                             .frame(width: 4)
                             .padding(.vertical, 4)
                             .padding(.leading, 2)
+                    } else if isHovered {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.primary.opacity(0.06))
                     }
                 }
             )
             .clipShape(RoundedRectangle(cornerRadius: 8))
             .shadow(color: isSelected ? Color.accentColor.opacity(0.3) : Color.clear, radius: 8, x: 0, y: 0)
+            .onHover { isHovered = $0 }
             .accessibilityIdentifier(identifier)
     }
 }

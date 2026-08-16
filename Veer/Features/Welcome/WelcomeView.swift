@@ -5,6 +5,7 @@ struct WelcomeView: View {
     let onTrusted: () -> Void
 
     @State private var trusted = false
+    @State private var advanced = false
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -28,8 +29,10 @@ struct WelcomeView: View {
             .controlSize(.large)
 
             if trusted {
-                Button("Continue") { onTrusted() }
-                    .controlSize(.large)
+                Button("Continue") {
+                    advance()
+                }
+                .controlSize(.large)
             } else {
                 Text("Waiting for permission…")
                     .foregroundStyle(.tertiary)
@@ -46,6 +49,17 @@ struct WelcomeView: View {
                 }
                 try? await Task.sleep(for: .seconds(1))
             }
+            // Auto-advance shortly after permission lands so onboarding
+            // completes itself; the Continue button stays as a fallback.
+            try? await Task.sleep(for: .milliseconds(600))
+            guard trusted else { return }
+            advance()
         }
+    }
+
+    private func advance() {
+        guard !advanced else { return }
+        advanced = true
+        onTrusted()
     }
 }

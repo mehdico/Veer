@@ -11,6 +11,7 @@ struct VeerSettings: Codable, Sendable, Equatable {
     var ignoredAppBundleIds: [String] = []
     var ignoresPasswordManagers: Bool = true
     var didSeedDefaultIgnoredApps: Bool = false
+    var hasSeenActionsHint: Bool = false
     var panelSizeByPosition: [Int: PanelSize] = [:]
 }
 
@@ -26,6 +27,7 @@ extension VeerSettings {
         case ignoredAppBundleIds
         case ignoresPasswordManagers
         case didSeedDefaultIgnoredApps
+        case hasSeenActionsHint
         case panelSizeByPosition
     }
 
@@ -44,6 +46,7 @@ extension VeerSettings {
         self.ignoredAppBundleIds = try container.decodeIfPresent([String].self, forKey: .ignoredAppBundleIds) ?? []
         self.ignoresPasswordManagers = try container.decodeIfPresent(Bool.self, forKey: .ignoresPasswordManagers) ?? true
         self.didSeedDefaultIgnoredApps = try container.decodeIfPresent(Bool.self, forKey: .didSeedDefaultIgnoredApps) ?? false
+        self.hasSeenActionsHint = try container.decodeIfPresent(Bool.self, forKey: .hasSeenActionsHint) ?? false
         self.panelSizeByPosition = try container.decodeIfPresent([Int: PanelSize].self, forKey: .panelSizeByPosition) ?? [:]
     }
 }

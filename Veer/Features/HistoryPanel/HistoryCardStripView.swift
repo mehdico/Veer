@@ -1,33 +1,111 @@
+import AppKit
 import SwiftUI
+
+/// Translates pure-vertical scroll-wheel and trackpad deltas over the
+/// horizontal card strip into card-by-card movement — a plain vertical wheel
+/// otherwise can't scroll a horizontal SwiftUI ScrollView. Horizontal
+/// trackpad swipes pass through untouched: only events with no horizontal
+/// component are translated.
+@MainActor
+final class WheelScroller {
+    /// Whether translation is currently wanted (panel shown, horizontal strip).
+    var isEnabled = false
+    /// Whether the strip is laying out vertically (left/right edge positions),
+    /// where the wheel already scrolls natively and must be left alone.
+    var isVerticalLayout = true
+    var step: (Int) -> Void = { _ in }
+
+    private var monitor: Any?
+    private var accumulator: CGFloat = 0
+    private static let threshold: CGFloat = 24
+
+    func start() {
+        guard monitor == nil else { return }
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
+            MainActor.assumeIsolated {
+                self?.handle(event) ?? event
+            }
+        }
+    }
+
+    func stop() {
+        if let monitor {
+            NSEvent.removeMonitor(monitor)
+            self.monitor = nil
+        }
+        accumulator = 0
+    }
+
+    private func handle(_ event: NSEvent) -> NSEvent? {
+        guard isEnabled, !isVerticalLayout, event.window is PanelWindow else { return event }
+        let vertical = event.scrollingDeltaY
+        guard abs(vertical) > 0.5, abs(event.scrollingDeltaX) < 0.5 else { return event }
+        accumulator += vertical
+        var safety = 0
+        while abs(accumulator) >= Self.threshold {
+            // Positive vertical delta = scroll up = toward earlier clips.
+            let direction = accumulator > 0 ? -1 : 1
+            step(direction)
+            accumulator -= (accumulator > 0 ? Self.threshold : -Self.threshold)
+            safety += 1
+            if safety > 8 {
+                accumulator = 0
+                break
+            }
+        }
+        return nil
+    }
+}
 
 struct HistoryCardStripView: View {
     @Bindable var viewModel: HistoryListViewModel
     @Bindable var coordinator: PanelCoordinator
-    @FocusState private var focused: Bool
+    @FocusState private var searchFocused: Bool
     @State private var firstVisibleID: UUID?
+    @State private var wheelScroller = WheelScroller()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: 0) {
-            PanelSearchChrome(searchText: viewModel.searchText)
+            PanelSearchChrome(searchText: $viewModel.searchText, focused: $searchFocused)
             cardScroll
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .focusable()
-        .focusEffectDisabled()
-        .focused($focused)
         .onAppear {
-            focused = true
+            searchFocused = true
+            configureWheelScroller()
+            wheelScroller.start()
+        }
+        .onDisappear {
+            wheelScroller.stop()
         }
         .onChange(of: coordinator.isShown) { _, shown in
+            wheelScroller.isEnabled = shown && !wheelScroller.isVerticalLayout
             if shown {
-                focused = true
+                searchFocused = true
                 firstVisibleID = viewModel.filteredItems.first?.id
             }
         }
         .onKeyPress(phases: [.down, .repeat]) { press in
             PanelKeyHandler.handle(press, viewModel: viewModel)
         }
+    }
+
+    private func configureWheelScroller() {
+        let idBinding = $firstVisibleID
+        wheelScroller.step = { [weak viewModel] direction in
+            guard let viewModel else { return }
+            let items = viewModel.filteredItems
+            guard let currentID = idBinding.wrappedValue,
+                  let index = items.firstIndex(where: { $0.id == currentID })
+            else { return }
+            let next = min(max(index + direction, 0), items.count - 1)
+            guard next != index else { return }
+            withAnimation(.easeOut(duration: 0.15)) {
+                idBinding.wrappedValue = items[next].id
+            }
+        }
+        wheelScroller.isEnabled = coordinator.isShown && !wheelScroller.isVerticalLayout
     }
 
     private var cardScroll: some View {
@@ -58,6 +136,12 @@ struct HistoryCardStripView: View {
                 if firstVisibleID == nil {
                     firstVisibleID = viewModel.filteredItems.first?.id
                 }
+                wheelScroller.isVerticalLayout = isVertical
+                wheelScroller.isEnabled = coordinator.isShown && !isVertical
+            }
+            .onChange(of: isVertical) { _, vertical in
+                wheelScroller.isVerticalLayout = vertical
+                wheelScroller.isEnabled = coordinator.isShown && !vertical
             }
             .onChange(of: firstVisibleID) { _, newID in
                 guard let newID,
@@ -143,6 +227,21 @@ struct HistoryCardStripView: View {
             .overlay(alignment: .topTrailing) {
                 if (0...8).contains(shortcut) {
                     shortcutBadge(shortcut + 1)
+                }
+            }
+            .overlay(alignment: .bottomLeading) {
+                // Discoverability cue mirroring the list layout's chevron:
+                // the selected card has smart actions under ↓.
+                if index == viewModel.selectedIndex,
+                   !viewModel.actionsExpanded,
+                   !viewModel.actions(for: snapshot).isEmpty
+                {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .padding(6)
+                        .help("Smart actions — press ↓")
+                        .accessibilityIdentifier(AccessibilityIdentifiers.actionHintCue)
                 }
             }
             .overlay(alignment: .bottom) {

@@ -8,6 +8,7 @@ private struct CardChrome<Content: View>: View {
     let identifier: String
     let sourceBundleId: String?
     let timeLabel: String
+    @State private var isHovered = false
     @ViewBuilder let content: () -> Content
 
     var body: some View {
@@ -26,6 +27,10 @@ private struct CardChrome<Content: View>: View {
         }
         .padding(10)
         .background(.ultraThinMaterial)
+        .background(
+            RoundedRectangle(cornerRadius: Constants.UI.cardCornerRadius)
+                .fill(Color.primary.opacity(isHovered && !isSelected ? 0.05 : 0))
+        )
         .overlay(
             RoundedRectangle(cornerRadius: Constants.UI.cardCornerRadius)
                 .stroke(
@@ -40,6 +45,7 @@ private struct CardChrome<Content: View>: View {
         .clipShape(RoundedRectangle(cornerRadius: Constants.UI.cardCornerRadius))
         .shadow(color: isSelected ? Color.accentColor.opacity(0.4) : Color.black.opacity(0.1), radius: isSelected ? 12 : 4)
         .scaleEffect(isSelected ? 1.02 : 1.0)
+        .onHover { isHovered = $0 }
         .accessibilityIdentifier(identifier)
     }
 

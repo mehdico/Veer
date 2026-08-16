@@ -20,7 +20,12 @@ final class HistoryListViewModel {
             if oldValue != selectedIndex { closeActionStrip() }
         }
     }
-    var actionsExpanded = false
+    var actionsExpanded = false {
+        didSet {
+            // Opening the strip means the discoverability hint did its job.
+            if actionsExpanded { markActionsHintSeen() }
+        }
+    }
     /// Index of the highlighted action while the strip is open.
     var actionIndex = 0
     var quickPasteBase: Int = 0
@@ -51,6 +56,12 @@ final class HistoryListViewModel {
     /// Whether on-card content previews (image/PDF/file thumbnails, color
     /// swatches) are enabled. Off → icons and labels only.
     var previewsEnabled: Bool { settings?.showPreviews ?? true }
+
+    /// Dismisses the one-time smart-actions hint shown at the panel bottom.
+    func markActionsHintSeen() {
+        guard settings?.hasSeenActionsHint == false else { return }
+        settings?.hasSeenActionsHint = true
+    }
 
     @ObservationIgnored private var itemsByID: [UUID: ClipItemSnapshot] = [:]
     @ObservationIgnored private let blobDataCache = NSCache<NSString, NSData>()
@@ -594,9 +605,19 @@ final class HistoryListViewModel {
         }
     }
 
-    func pasteSelected() async {
+    /// Copies the selected clip back to the pasteboard without simulating a
+    /// paste or dismissing the panel (⌘C in the panel).
+    func copySelected() {
         guard let snapshot = currentSnapshot() else { return }
-        await paste(snapshot)
+        let blobs = (try? repository.fetchBlobs(id: snapshot.id)) ?? []
+        try? repository.moveToFront(id: snapshot.id)
+        let typed = Self.pasteboardPayload(for: blobs, pastesRichText: settings?.pastesRichText ?? true)
+        pasteboardWriter.write(typed: typed)
+    }
+
+    func pasteSelected(asPlainText: Bool = false) async {
+        guard let snapshot = currentSnapshot() else { return }
+        await paste(snapshot, asPlainText: asPlainText)
     }
 
     func selectAndPaste(quickIndex: Int) async {
@@ -605,10 +626,11 @@ final class HistoryListViewModel {
         await paste(filteredItems[quickIndex])
     }
 
-    private func paste(_ snapshot: ClipItemSnapshot) async {
+    private func paste(_ snapshot: ClipItemSnapshot, asPlainText: Bool = false) async {
         let blobs = (try? repository.fetchBlobs(id: snapshot.id)) ?? []
         try? repository.moveToFront(id: snapshot.id)
-        let typed = Self.pasteboardPayload(for: blobs, pastesRichText: settings?.pastesRichText ?? true)
+        let pastesRichText = asPlainText ? false : (settings?.pastesRichText ?? true)
+        let typed = Self.pasteboardPayload(for: blobs, pastesRichText: pastesRichText)
         pasteboardWriter.write(typed: typed)
         panel.hide()
         panel.restorePreviousApp()
