@@ -21,6 +21,9 @@ xcuserdata/
 .build/
 Package.resolved
 
+# Release artifacts
+dist/
+
 # IDE
 .idea/
 .vscode/
