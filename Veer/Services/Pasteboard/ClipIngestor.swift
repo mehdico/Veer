@@ -9,6 +9,9 @@ final class ClipIngestor {
     private let logger = VeerLogger(category: .pasteboard)
     private var consumeTask: Task<Void, Never>?
 
+    /// Optional depth-gauge hook, invoked as each event is consumed.
+    var onConsume: (() -> Void)?
+
     init(
         monitor: any PasteboardMonitoring,
         repository: any ClipRepository,
@@ -26,6 +29,7 @@ final class ClipIngestor {
         consumeTask?.cancel()
         consumeTask = Task { @MainActor [weak self] in
             for await event in stream {
+                self?.onConsume?()
                 await self?.ingestAsync(event)
             }
         }

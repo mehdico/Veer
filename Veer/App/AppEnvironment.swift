@@ -125,12 +125,15 @@ final class AppEnvironment {
         pasteboardWriter.onWrite = { [weak monitor] count in
             monitor?.acknowledge(changeCount: count)
         }
+        let eventDepthGauge = MonitorEventDepthGauge()
+        monitor.onYield = { eventDepthGauge.eventYielded() }
         let ingestor = ClipIngestor(
             monitor: monitor,
             repository: repository,
             textOnlyHistory: { settings.textOnlyHistory },
             ignoredAppBundleIds: { Set(settings.ignoredAppBundleIds) }
         )
+        ingestor.onConsume = { eventDepthGauge.eventConsumed() }
         let panel = PanelCoordinator()
         panel.horizontal = settings.showAsCards
         let preview = PreviewCoordinator()

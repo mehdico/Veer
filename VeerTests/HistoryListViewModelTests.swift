@@ -75,8 +75,11 @@ struct HistoryListViewModelTests {
     @Test func searchFiltersAndResetsBoundsAfterClearing() async throws {
         let (vm, _, _, _, _) = try await makeViewModel(seedCount: 3)
         vm.searchText = "item-0"
+        // Search re-runs are debounced while typing; flush to filter now.
+        vm.flushPendingSearch()
         #expect(vm.filteredItems.count == 1)
         vm.searchText = ""
+        vm.flushPendingSearch()
         #expect(vm.filteredItems.count == 3)
     }
 

@@ -8,7 +8,10 @@ import Translation
 final class HistoryListViewModel {
     var items: [ClipItemSnapshot] = []
     var searchText: String = "" {
-        didSet { runSearch() }
+        didSet {
+            guard oldValue != searchText else { return }
+            scheduleSearch()
+        }
     }
     /// Reveals the inline action strip for the selected clip. Closed whenever
     /// the selection moves, so it always belongs to the visible card.
@@ -25,6 +28,16 @@ final class HistoryListViewModel {
     private(set) var filteredItems: [ClipItemSnapshot] = []
 
     @ObservationIgnored private var highlightsByID: [UUID: [Range<String.Index>]] = [:]
+    /// Debounces search re-runs while the user types.
+    @ObservationIgnored private var searchDebounceTask: Task<Void, Never>?
+
+    /// Detected actions per clip, so strip rendering and context menus don't
+    /// re-run content detection on every body evaluation. Validated against
+    /// the snapshot (replaced on insert/move) and the web-search setting.
+    @ObservationIgnored private var actionsCache: [UUID: (snapshot: ClipItemSnapshot, webSearch: Bool, actions: [ClipAction])] = [:]
+    /// Full plain text of rich-text clips, computed off the hot path.
+    @ObservationIgnored private var fullPlainTextCache: [UUID: String] = [:]
+    @ObservationIgnored private var fullPlainTextPending: Set<UUID> = []
 
     /// Whether the system's translation pack for a language code is installed
     /// (`true`) or known not to be (`false`). Populated lazily by async checks;
@@ -159,15 +172,17 @@ final class HistoryListViewModel {
     }
 
     func stop() {
+        flushPendingSearch()
         refreshTask?.cancel()
         refreshTask = nil
     }
 
     func refresh() {
         let limit = repository.maxItems
-        let fetched = (try? repository.fetchAll(limit: limit)) ?? []
-        items = fetched.map(ClipItemSnapshot.init)
+        let fetched = (try? repository.fetchSnapshots(limit: limit)) ?? []
+        items = fetched
         itemsByID = Dictionary(uniqueKeysWithValues: items.map { ($0.id, $0) })
+        actionsCache.removeAll()
         runSearch(preservingSelection: true)
     }
 
@@ -203,6 +218,7 @@ final class HistoryListViewModel {
         case .cleared:
             items = []
             itemsByID = [:]
+            actionsCache.removeAll()
             runSearch(preservingSelection: true)
         case .capped:
             refresh()
@@ -220,6 +236,7 @@ final class HistoryListViewModel {
 
     func resetForShow() {
         searchText = ""
+        flushPendingSearch()
         selectedIndex = 0
         quickPasteBase = 0
         closeActionStrip()
@@ -263,8 +280,20 @@ final class HistoryListViewModel {
 
     /// Smart actions for a clip, detected from its content. Text clips are
     /// detected from the preview string; files, images, PDFs, colors and rich
-    /// text get actions derived from their payload blobs.
+    /// text get actions derived from their payload blobs. Cached per snapshot
+    /// so strip rendering, context menus, and ⌘↩ don't re-run detection.
     func actions(for snapshot: ClipItemSnapshot) -> [ClipAction] {
+        let webSearch = settings?.alwaysSearchWeb == true
+        if let cached = actionsCache[snapshot.id],
+           cached.snapshot == snapshot, cached.webSearch == webSearch {
+            return cached.actions
+        }
+        let detected = detectActions(for: snapshot)
+        actionsCache[snapshot.id] = (snapshot, webSearch, detected)
+        return detected
+    }
+
+    private func detectActions(for snapshot: ClipItemSnapshot) -> [ClipAction] {
         switch snapshot.kind {
         case .text, .richText: return textActions(for: snapshot)
         case .file: return fileActions(for: snapshot)
@@ -299,7 +328,7 @@ final class HistoryListViewModel {
                 }
             }
         }
-        if snapshot.kind == .richText, let plain = fullPlainText(for: snapshot) {
+        if snapshot.kind == .richText, let plain = cachedFullPlainText(for: snapshot) {
             actions.append(.copyPlainText(plain))
         }
         return actions
@@ -394,32 +423,55 @@ final class HistoryListViewModel {
         return URL(string: str)
     }
 
-    /// The full plain text of a clip — richer than the truncated preview, so
-    /// "Copy as Plain Text" copies everything.
-    private func fullPlainText(for snapshot: ClipItemSnapshot) -> String? {
+    /// The full plain text of a rich-text clip — richer than the truncated
+    /// preview, so "Copy as Plain Text" copies everything. The cheap plain
+    /// blob path is synchronous; RTF/HTML imports run off the main actor and
+    /// the action appears once the parse lands.
+    private func cachedFullPlainText(for snapshot: ClipItemSnapshot) -> String? {
+        if let cached = fullPlainTextCache[snapshot.id] { return cached }
         if let data = blob(for: snapshot.id, type: Self.plainTextRawValue),
            let text = String(data: data, encoding: .utf8),
            !text.isEmpty
         {
+            fullPlainTextCache[snapshot.id] = text
             return text
         }
-        if let data = blob(for: snapshot.id, type: NSPasteboard.PasteboardType.rtf.rawValue),
-           let attr = try? NSAttributedString(data: data, options: [:], documentAttributes: nil),
-           !attr.string.isEmpty
-        {
-            return attr.string
-        }
-        if let data = blob(for: snapshot.id, type: NSPasteboard.PasteboardType.html.rawValue),
-           let attr = try? NSAttributedString(
-            data: data,
-            options: [.documentType: NSAttributedString.DocumentType.html],
-            documentAttributes: nil
-           ),
-           !attr.string.isEmpty
-        {
-            return attr.string
+        guard !fullPlainTextPending.contains(snapshot.id) else { return nil }
+        fullPlainTextPending.insert(snapshot.id)
+        let rtfData = blob(for: snapshot.id, type: NSPasteboard.PasteboardType.rtf.rawValue)
+        let htmlData = blob(for: snapshot.id, type: NSPasteboard.PasteboardType.html.rawValue)
+        Task { @MainActor [weak self] in
+            let plain = await Self.parsePlainText(rtf: rtfData, html: htmlData)
+            guard let self else { return }
+            self.fullPlainTextPending.remove(snapshot.id)
+            if let plain {
+                self.fullPlainTextCache[snapshot.id] = plain
+                self.actionsCache.removeAll()
+            }
         }
         return nil
+    }
+
+    private static func parsePlainText(rtf: Data?, html: Data?) async -> String? {
+        await Task.detached(priority: .utility) {
+            if let rtf,
+               let attr = try? NSAttributedString(data: rtf, options: [:], documentAttributes: nil),
+               !attr.string.isEmpty
+            {
+                return attr.string
+            }
+            if let html,
+               let attr = try? NSAttributedString(
+                data: html,
+                options: [.documentType: NSAttributedString.DocumentType.html],
+                documentAttributes: nil
+               ),
+               !attr.string.isEmpty
+            {
+                return attr.string
+            }
+            return nil
+        }.value
     }
 
     private func imageData(for snapshot: ClipItemSnapshot) -> (data: Data, fileExtension: String)? {
@@ -467,6 +519,9 @@ final class HistoryListViewModel {
             guard let self else { return }
             self.translationChecksInFlight.remove(languageCode)
             self.translationAvailabilityCache[languageCode] = ready
+            // Cached actions were built without knowing this; rebuild so the
+            // translate action can appear.
+            self.actionsCache.removeAll()
         }
         return false
     }
@@ -551,9 +606,9 @@ final class HistoryListViewModel {
     }
 
     private func paste(_ snapshot: ClipItemSnapshot) async {
-        guard let item = try? repository.fetchOne(id: snapshot.id) else { return }
-        try? repository.moveToFront(id: item.id)
-        let typed = Self.pasteboardPayload(for: item.blobs, pastesRichText: settings?.pastesRichText ?? true)
+        let blobs = (try? repository.fetchBlobs(id: snapshot.id)) ?? []
+        try? repository.moveToFront(id: snapshot.id)
+        let typed = Self.pasteboardPayload(for: blobs, pastesRichText: settings?.pastesRichText ?? true)
         pasteboardWriter.write(typed: typed)
         panel.hide()
         panel.restorePreviousApp()
@@ -623,9 +678,36 @@ final class HistoryListViewModel {
     }
 
     /// Character ranges of the search query inside a clip's preview, for
-    /// highlighting why it matched. Empty while the search is empty.
+    /// highlighting why it matched. Computed lazily per clip (only rows the
+    /// lazy stacks actually render ask) and cached until the query changes.
     func highlights(for snapshot: ClipItemSnapshot) -> [Range<String.Index>] {
-        searchText.isEmpty ? [] : (highlightsByID[snapshot.id] ?? [])
+        guard !searchText.isEmpty else { return [] }
+        if let cached = highlightsByID[snapshot.id] { return cached }
+        let ranges = searchEngine.highlightRanges(query: searchText, in: snapshot.preview ?? "")
+        highlightsByID[snapshot.id] = ranges
+        return ranges
+    }
+
+    /// Debounce typing: intermediate queries for a 1000-item history are
+    /// wasted work once the next keystroke lands.
+    private func scheduleSearch() {
+        searchDebounceTask?.cancel()
+        searchDebounceTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(80))
+            guard !Task.isCancelled else { return }
+            runSearch()
+        }
+    }
+
+    /// Runs a pending debounced search now (panel show/reset/teardown paths,
+    /// and tests that need synchronous filtering).
+    func flushPendingSearch() {
+        let hadPending = searchDebounceTask != nil
+        searchDebounceTask?.cancel()
+        searchDebounceTask = nil
+        if hadPending {
+            runSearch()
+        }
     }
 
     /// Rebuilds the filtered list. When `preservingSelection` is set (repository
@@ -639,17 +721,13 @@ final class HistoryListViewModel {
             highlightsByID = [:]
         } else {
             let query = searchText
-            let candidates = items.map { SearchCandidate(id: $0.id, text: $0.preview ?? "") }
+            // Candidates come from each snapshot's pre-folded preview, so a
+            // keystroke never re-lowercases the whole corpus.
+            let candidates = items.map { SearchCandidate(id: $0.id, preFolded: $0.foldedPreview ?? "") }
             let ids = searchEngine.search(query: query, in: candidates)
             filteredItems = ids.compactMap { itemsByID[$0] }
-            var highlights: [UUID: [Range<String.Index>]] = [:]
-            for snapshot in filteredItems {
-                let ranges = searchEngine.highlightRanges(query: query, in: snapshot.preview ?? "")
-                if !ranges.isEmpty {
-                    highlights[snapshot.id] = ranges
-                }
-            }
-            highlightsByID = highlights
+            // Highlight ranges are computed lazily per visible row.
+            highlightsByID = [:]
         }
         filteredIDs = filteredItems.map(\.id)
         if let selectedID, let index = filteredIDs.firstIndex(of: selectedID) {

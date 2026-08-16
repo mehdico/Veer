@@ -9,6 +9,24 @@ import NaturalLanguage
 /// recognizable value. Mixed text (a sentence containing a URL, a multi-line
 /// copy, …) produces no actions, so we never offer "open in browser" on prose.
 enum ClipContentDetector {
+    // Compiled once: detection runs on hot paths (action strip body
+    // evaluations, context menus), so per-call compilation showed up there.
+    // Callers are main-actor, which also covers the formatter's thread safety.
+    private static let gitSSHRegex = try? Regex(#"^[A-Za-z0-9._%+-]+@([A-Za-z0-9.-]+):(.+)$"#)
+    private static let emailRegex = try? Regex(#"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"#)
+    private static let dateShapedRegex = try? Regex(#"^\d{2,4}-\d{1,2}(-\d{1,2})?$"#)
+    private static let isoInternetFormatter = ISO8601DateFormatter()
+    private static let isoFractionalFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+    private static let isoDateOnlyFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withFullDate]
+        return formatter
+    }()
+
     static func actions(for text: String) -> [ClipAction] {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return [] }
@@ -79,8 +97,7 @@ enum ClipContentDetector {
     /// equivalent https URL for opening in a browser.
     static func detectGitSSH(in text: String) -> (clone: String, httpsURL: URL)? {
         guard !text.contains(where: \.isWhitespace) else { return nil }
-        let pattern = #"^[A-Za-z0-9._%+-]+@([A-Za-z0-9.-]+):(.+)$"#
-        guard let regex = try? Regex(pattern),
+        guard let regex = Self.gitSSHRegex,
               let match = text.wholeMatch(of: regex)
         else { return nil }
         let parts = Array(match.output)
@@ -96,8 +113,7 @@ enum ClipContentDetector {
 
     static func detectEmail(in text: String) -> String? {
         guard !text.contains(where: \.isWhitespace) else { return nil }
-        let pattern = #"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"#
-        guard let regex = try? Regex(pattern) else { return nil }
+        guard let regex = Self.emailRegex else { return nil }
         return text.wholeMatch(of: regex) != nil ? text : nil
     }
 
@@ -173,8 +189,7 @@ enum ClipContentDetector {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, trimmed.count <= 64 else { return nil }
         // Date-like shapes ("2024-01-01", "12-30") aren't arithmetic.
-        let datePattern = #"^\d{2,4}-\d{1,2}(-\d{1,2})?$"#
-        if let regex = try? Regex(datePattern), trimmed.wholeMatch(of: regex) != nil {
+        if let regex = Self.dateShapedRegex, trimmed.wholeMatch(of: regex) != nil {
             return nil
         }
         guard trimmed.contains(where: { "+-*/".contains($0) }) else { return nil }
@@ -297,12 +312,7 @@ enum ClipContentDetector {
     static func detectISODateEpochSeconds(in text: String) -> String? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
-        let internet = ISO8601DateFormatter()
-        let fractional = ISO8601DateFormatter()
-        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let dateOnly = ISO8601DateFormatter()
-        dateOnly.formatOptions = [.withFullDate]
-        for formatter in [internet, fractional, dateOnly] {
+        for formatter in [Self.isoInternetFormatter, Self.isoFractionalFormatter, Self.isoDateOnlyFormatter] {
             if let date = formatter.date(from: trimmed) {
                 return String(Int(date.timeIntervalSince1970))
             }

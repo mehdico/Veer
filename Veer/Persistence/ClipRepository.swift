@@ -22,7 +22,9 @@ protocol ClipRepository: AnyObject {
     ) throws -> InsertOutcome
     func fetchAll(limit: Int?) throws -> [ClipItem]
     func fetchOne(id: UUID) throws -> ClipItem?
+    func fetchSnapshots(limit: Int?) throws -> [ClipItemSnapshot]
     func fetchBlob(id: UUID, type: String) throws -> Data?
+    func fetchBlobs(id: UUID) throws -> [PayloadBlob]
     func fetchThumbnail(id: UUID) throws -> Data?
     func moveToFront(id: UUID) throws
     func delete(id: UUID) throws
@@ -51,6 +53,14 @@ extension ClipRepository {
 
     func fetchBlob(id: UUID, type: String) throws -> Data? {
         try fetchOne(id: id)?.blobs.first { $0.typeRawValue == type }?.data
+    }
+
+    func fetchSnapshots(limit: Int?) throws -> [ClipItemSnapshot] {
+        try fetchAll(limit: limit).map(ClipItemSnapshot.init)
+    }
+
+    func fetchBlobs(id: UUID) throws -> [PayloadBlob] {
+        try fetchOne(id: id)?.blobs ?? []
     }
 
     func fetchThumbnail(id: UUID) throws -> Data? {

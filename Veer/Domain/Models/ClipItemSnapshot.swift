@@ -5,6 +5,9 @@ struct ClipItemSnapshot: Identifiable, Hashable, Sendable {
     let createdAt: Date
     let sourceBundleId: String?
     let preview: String?
+    /// `preview` lowercased once at snapshot creation, so search never
+    /// re-folds the corpus per keystroke.
+    let foldedPreview: String?
     let typeRawValues: [String]
 
     init(
@@ -18,6 +21,7 @@ struct ClipItemSnapshot: Identifiable, Hashable, Sendable {
         self.createdAt = createdAt
         self.sourceBundleId = sourceBundleId
         self.preview = preview
+        self.foldedPreview = preview?.lowercased()
         self.typeRawValues = typeRawValues
     }
 }

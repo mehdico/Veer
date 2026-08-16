@@ -9,6 +9,9 @@ final class PasteboardMonitor: PasteboardMonitoring {
     let events: AsyncStream<MonitorEvent>
     private let logger = VeerLogger(category: .pasteboard)
 
+    /// Optional depth-gauge hook, invoked after each yielded event.
+    var onYield: (() -> Void)?
+
     private var lastChangeCount: Int
     private var emptyRetries: Int = 0
     private var pendingChangeCount: Int?
@@ -119,6 +122,7 @@ final class PasteboardMonitor: PasteboardMonitoring {
                 payload: ClipPayload(typed: snapshot.typed),
                 sourceBundleId: bundle
             ))
+            onYield?()
         }
     }
 

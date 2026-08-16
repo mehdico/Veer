@@ -32,7 +32,7 @@ struct RichTextCellView: View {
                 Spacer(minLength: 0)
             }
         }
-        .task(id: snapshot.id) { loadAttributed() }
+        .task(id: snapshot.id) { await loadAttributed() }
     }
 
     private var previewText: Text {
@@ -52,19 +52,23 @@ struct RichTextCellView: View {
         .foregroundStyle(.secondary)
     }
 
-    private func loadAttributed() {
+    private func loadAttributed() async {
         let key = snapshot.id.uuidString as NSString
         if let cached = Self.cache.object(forKey: key) {
             attributed = AttributedString(cached)
             return
         }
-        guard let data = blobProvider(),
-              let ns = try? NSAttributedString(
-                  data: data,
-                  options: [.documentType: NSAttributedString.DocumentType.rtf],
-                  documentAttributes: nil
-              )
-        else { return }
+        guard let data = blobProvider() else { return }
+        // RTF import off the main actor: rows appear instantly while a history
+        // of rich-text clips scrolls.
+        let ns = await Task.detached(priority: .utility) {
+            try? NSAttributedString(
+                data: data,
+                options: [.documentType: NSAttributedString.DocumentType.rtf],
+                documentAttributes: nil
+            )
+        }.value
+        guard !Task.isCancelled, let ns else { return }
         Self.cache.setObject(ns, forKey: key)
         attributed = AttributedString(ns)
     }

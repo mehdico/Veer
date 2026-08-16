@@ -45,9 +45,9 @@ struct TextCellView: View {
     @ViewBuilder
     private var sourceIcon: some View {
         if let bundle = snapshot.sourceBundleId,
-           let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundle)
+           let icon = SourceAppInfoCache.appIcon(for: bundle)
         {
-            Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
+            Image(nsImage: icon)
                 .resizable()
                 .scaledToFit()
         } else {
@@ -57,9 +57,6 @@ struct TextCellView: View {
     }
 
     private func sourceAppName(for bundleId: String) -> String {
-        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId) {
-            return Bundle(url: url)?.infoDictionary?["CFBundleName"] as? String ?? bundleId
-        }
-        return bundleId
+        SourceAppInfoCache.appName(for: bundleId)
     }
 }

@@ -3,6 +3,7 @@ import SwiftData
 
 @MainActor
 final class ClipRepositoryLive: ClipRepository {
+    private let container: ModelContainer
     private let context: ModelContext
     private(set) var maxItems: Int
     private var changeContinuations: [UUID: AsyncStream<RepositoryChange>.Continuation] = [:]
@@ -20,6 +21,7 @@ final class ClipRepositoryLive: ClipRepository {
     private let logger = VeerLogger(category: .repository)
 
     init(container: ModelContainer, maxItems: Int) {
+        self.container = container
         self.context = ModelContext(container)
         self.maxItems = maxItems
     }
@@ -86,11 +88,35 @@ final class ClipRepositoryLive: ClipRepository {
         return try context.fetch(descriptor).first
     }
 
+    /// List reads run on a short-lived context so the fetched rows don't stay
+    /// registered in the long-lived writer context after snapshots (values)
+    /// have been extracted.
+    func fetchSnapshots(limit: Int?) throws -> [ClipItemSnapshot] {
+        let readContext = ModelContext(container)
+        var descriptor = FetchDescriptor<ClipItem>(sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
+        if let limit { descriptor.fetchLimit = limit }
+        return try readContext.fetch(descriptor).map(ClipItemSnapshot.init)
+    }
+
     func fetchBlob(id: UUID, type: String) throws -> Data? {
         // #Predicate can't traverse the optional `item` relationship, so fetch
-        // the owning item and scan its blobs instead.
-        guard let item = try fetchOne(id: id) else { return nil }
+        // the owning item and scan its blobs. The short-lived context keeps the
+        // faulted blob rows (and their payloads) out of the writer context.
+        let readContext = ModelContext(container)
+        var descriptor = FetchDescriptor<ClipItem>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        guard let item = try readContext.fetch(descriptor).first else { return nil }
         return item.blobs.first { $0.typeRawValue == type }?.data
+    }
+
+    func fetchBlobs(id: UUID) throws -> [PayloadBlob] {
+        // Copies, not the fetched models: unmanaged values survive the
+        // short-lived read context that loaded them.
+        let readContext = ModelContext(container)
+        var descriptor = FetchDescriptor<ClipItem>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        guard let item = try readContext.fetch(descriptor).first else { return [] }
+        return item.blobs.map { PayloadBlob(typeRawValue: $0.typeRawValue, data: $0.data) }
     }
 
     func fetchThumbnail(id: UUID) throws -> Data? {
@@ -140,11 +166,13 @@ final class ClipRepositoryLive: ClipRepository {
     }
 
     private func enforceCap() throws {
+        // Count first: in the steady state (history under the cap) this is a
+        // cheap indexed count instead of materializing every row on each insert.
+        let total = try context.fetchCount(FetchDescriptor<ClipItem>())
+        guard total > maxItems else { return }
         var descriptor = FetchDescriptor<ClipItem>(sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
-        descriptor.fetchLimit = maxItems + 1
-        let items = try context.fetch(descriptor)
-        guard items.count > maxItems else { return }
-        for item in items.suffix(from: maxItems) {
+        descriptor.fetchOffset = maxItems
+        for item in try context.fetch(descriptor) {
             context.delete(item)
         }
         try context.save()

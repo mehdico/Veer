@@ -15,6 +15,9 @@ struct FileCellView: View {
     @State private var fileMissing = false
 
     private static let cache = NSCache<NSString, NSImage>()
+    /// Icon lookup is a LaunchServices round-trip; cache per path so repeated
+    /// appearances of a file row don't refetch it.
+    private static let iconCache = NSCache<NSString, NSImage>()
 
     var body: some View {
         CellChrome(isSelected: isSelected, identifier: identifier) {
@@ -86,7 +89,7 @@ struct FileCellView: View {
             thumbnail = nil
             return
         }
-        icon = NSWorkspace.shared.icon(forFile: url.path)
+        icon = Self.cachedIcon(for: url)
         guard previewsEnabled else {
             thumbnail = nil
             return
@@ -102,6 +105,14 @@ struct FileCellView: View {
         if let generated {
             Self.cache.setObject(generated, forKey: key)
         }
+    }
+
+    private static func cachedIcon(for url: URL) -> NSImage {
+        let key = url.path as NSString
+        if let cached = iconCache.object(forKey: key) { return cached }
+        let icon = NSWorkspace.shared.icon(forFile: url.path)
+        iconCache.setObject(icon, forKey: key)
+        return icon
     }
 
     private static func makeThumbnail(for url: URL) async -> NSImage? {

@@ -65,7 +65,7 @@ struct HistoryCardStripView: View {
                 else { return }
                 viewModel.quickPasteBase = idx
             }
-            .onChange(of: viewModel.filteredItems.map(\.id)) { _, _ in
+            .onChange(of: viewModel.filteredIDs) { _, _ in
                 let items = viewModel.filteredItems
                 if let anchor = firstVisibleID,
                    let idx = items.firstIndex(where: { $0.id == anchor })

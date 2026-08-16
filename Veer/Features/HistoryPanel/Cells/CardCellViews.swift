@@ -45,12 +45,12 @@ private struct CardChrome<Content: View>: View {
 
     @ViewBuilder
     private func sourceHeader(_ bundleId: String) -> some View {
-        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId) {
+        if let icon = SourceAppInfoCache.appIcon(for: bundleId) {
             HStack(spacing: 4) {
-                Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
+                Image(nsImage: icon)
                     .resizable()
                     .frame(width: 14, height: 14)
-                Text(Bundle(url: url)?.infoDictionary?["CFBundleName"] as? String ?? bundleId)
+                Text(SourceAppInfoCache.appName(for: bundleId))
                     .font(.system(size: 10))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -114,7 +114,7 @@ struct RichTextCardView: View {
                     .lineLimit(nil)
             }
         }
-        .task(id: snapshot.id) { loadRTF() }
+        .task(id: snapshot.id) { await loadRTF() }
     }
 
     private var previewText: Text {
@@ -123,19 +123,22 @@ struct RichTextCardView: View {
         return Text(AttributedString.highlighted(text, ranges: highlightRanges))
     }
 
-    private func loadRTF() {
+    private func loadRTF() async {
         let key = snapshot.id.uuidString as NSString
         if let cached = Self.cache.object(forKey: key) {
             attributed = AttributedString(cached)
             return
         }
-        guard let data = blobProvider(),
-              let ns = try? NSAttributedString(
-                  data: data,
-                  options: [.documentType: NSAttributedString.DocumentType.rtf],
-                  documentAttributes: nil
-              )
-        else { return }
+        guard let data = blobProvider() else { return }
+        // RTF import off the main actor, matching the list's rich-text cells.
+        let ns = await Task.detached(priority: .utility) {
+            try? NSAttributedString(
+                data: data,
+                options: [.documentType: NSAttributedString.DocumentType.rtf],
+                documentAttributes: nil
+            )
+        }.value
+        guard !Task.isCancelled, let ns else { return }
         Self.cache.setObject(ns, forKey: key)
         attributed = AttributedString(ns)
     }
@@ -356,6 +359,9 @@ struct FileCardView: View {
     @State private var fileMissing = false
 
     private static let cache = NSCache<NSString, NSImage>()
+    /// Icon lookup is a LaunchServices round-trip; cache per path so repeated
+    /// appearances of a file card don't refetch it.
+    private static let iconCache = NSCache<NSString, NSImage>()
 
     var body: some View {
         CardChrome(isSelected: isSelected, identifier: identifier, sourceBundleId: snapshot.sourceBundleId, timeLabel: snapshot.relativeTimeLabel) {
@@ -432,7 +438,7 @@ struct FileCardView: View {
             thumbnail = nil
             return
         }
-        icon = NSWorkspace.shared.icon(forFile: url.path)
+        icon = Self.cachedIcon(for: url)
         guard previewsEnabled else {
             thumbnail = nil
             return
@@ -448,6 +454,14 @@ struct FileCardView: View {
         if let generated {
             Self.cache.setObject(generated, forKey: key)
         }
+    }
+
+    private static func cachedIcon(for url: URL) -> NSImage {
+        let key = url.path as NSString
+        if let cached = iconCache.object(forKey: key) { return cached }
+        let icon = NSWorkspace.shared.icon(forFile: url.path)
+        iconCache.setObject(icon, forKey: key)
+        return icon
     }
 
     private static func makeThumbnail(for url: URL, side: CGFloat) async -> NSImage? {

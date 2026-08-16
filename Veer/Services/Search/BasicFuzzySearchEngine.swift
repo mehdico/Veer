@@ -43,11 +43,20 @@ final class BasicFuzzySearchEngine: SearchEngine {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return [] }
         // Character-wise folding keeps every folded unit aligned with an index
-        // in the original text, so ranges always map back safely.
-        let queryUnits = trimmed.map { String($0).lowercased() }
+        // in the original text, so ranges always map back safely. The fold
+        // cache bounds the String allocations to the unique characters seen
+        // instead of one per character of the text.
+        var foldCache: [Character: String] = [:]
+        func fold(_ character: Character) -> String {
+            if let folded = foldCache[character] { return folded }
+            let folded = String(character).lowercased()
+            foldCache[character] = folded
+            return folded
+        }
+        let queryUnits = trimmed.map(fold)
         let chars = Array(text)
         guard !queryUnits.isEmpty, !chars.isEmpty else { return [] }
-        let textUnits = chars.map { String($0).lowercased() }
+        let textUnits = chars.map(fold)
 
         if let start = Self.contiguousMatchStart(queryUnits: queryUnits, textUnits: textUnits) {
             return [Self.characterRange(start, start + queryUnits.count - 1, in: text, characterCount: chars.count)]

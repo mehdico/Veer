@@ -19,15 +19,20 @@ struct VeerLogger: Sendable {
         self.log = os.Logger(subsystem: subsystem, category: category.rawValue)
     }
 
-    func info(_ message: String) {
+    /// `@autoclosure` keeps call-site string interpolation unevaluated when
+    /// the level is filtered — logging on hot paths stays cheap when muted.
+    func info(_ message: @autoclosure () -> String) {
+        let message = message()
         log.info("\(message, privacy: .public)")
     }
 
-    func warning(_ message: String) {
+    func warning(_ message: @autoclosure () -> String) {
+        let message = message()
         log.warning("\(message, privacy: .public)")
     }
 
-    func error(_ message: String) {
+    func error(_ message: @autoclosure () -> String) {
+        let message = message()
         log.error("\(message, privacy: .public)")
     }
 
