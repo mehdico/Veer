@@ -46,7 +46,10 @@ final class StatusBarController: NSObject, StatusMenuActions, NSMenuDelegate {
 
     private func configureButton() {
         guard let button = statusItem.button else { return }
-        button.image = NSImage(systemSymbolName: "doc.on.clipboard", accessibilityDescription: "Veer")
+        let image = NSImage(named: "StatusBarIcon")
+            ?? NSImage(systemSymbolName: "doc.on.clipboard", accessibilityDescription: "Veer")
+        image?.isTemplate = true
+        button.image = image
         button.setAccessibilityIdentifier(AccessibilityIdentifiers.statusItemButton)
     }
 

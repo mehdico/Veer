@@ -1,0 +1,21 @@
+{
+  "images" : [
+    {
+      "filename" : "statusbar-icon-18.png",
+      "idiom" : "universal",
+      "scale" : "1x"
+    },
+    {
+      "filename" : "statusbar-icon-36.png",
+      "idiom" : "universal",
+      "scale" : "2x"
+    }
+  ],
+  "properties" : {
+    "template-rendering-intent" : "template"
+  },
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

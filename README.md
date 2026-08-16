@@ -95,4 +95,4 @@ Veer/
 
 ## Status
 
-Version 1.5.0. Built incrementally, each phase shipping a green build + tests. Current totals: 232 unit tests and 23 UI test cases across 14 files (counts as declared in the test sources; run the test commands above to verify). Outstanding follow-ups: a live hotkey recorder (the bindings are fixed defaults), localization scaffolding, and a VoiceOver audit.
+Version 1.5.1. Built incrementally, each phase shipping a green build + tests. Current totals: 232 unit tests and 23 UI test cases across 14 files (counts as declared in the test sources; run the test commands above to verify). Outstanding follow-ups: a live hotkey recorder (the bindings are fixed defaults), localization scaffolding, and a VoiceOver audit.
