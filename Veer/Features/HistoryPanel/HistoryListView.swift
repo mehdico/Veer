@@ -98,14 +98,18 @@ struct HistoryListView: View {
                     proxy.scrollTo(items[newIndex].id, anchor: .center)
                 }
             }
-            .onChange(of: viewModel.searchText) { _, newValue in
-                if let firstID = viewModel.filteredItems.first?.id {
-                    if newValue.isEmpty || reduceMotion {
+            .onChange(of: viewModel.resultsResetToken) { _, _ in
+                // The debounced search rebuilt the list for a new query: jump
+                // to the first result. Keying off the token (not searchText)
+                // guarantees filteredItems is fresh — searchText fires ~80ms
+                // before the debounce lands, and scrolling then anchored the
+                // list to the previous query's first match.
+                guard let firstID = viewModel.filteredItems.first?.id else { return }
+                if viewModel.searchText.isEmpty || reduceMotion {
+                    proxy.scrollTo(firstID, anchor: .top)
+                } else {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                         proxy.scrollTo(firstID, anchor: .top)
-                    } else {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                            proxy.scrollTo(firstID, anchor: .top)
-                        }
                     }
                 }
             }

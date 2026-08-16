@@ -31,6 +31,12 @@ final class HistoryListViewModel {
     var quickPasteBase: Int = 0
     private(set) var filteredIDs: [UUID] = []
     private(set) var filteredItems: [ClipItemSnapshot] = []
+    /// Bumped whenever a search-text change (not a background repository
+    /// change) rebuilds the filtered list — views reset scroll and ⌘N
+    /// anchoring to the first result on each bump. Views must react to this
+    /// rather than to `searchText`, which changes ~80ms before the debounced
+    /// search updates `filteredItems`.
+    private(set) var resultsResetToken = 0
 
     @ObservationIgnored private var highlightsByID: [UUID: [Range<String.Index>]] = [:]
     /// Debounces search re-runs while the user types.
@@ -752,6 +758,9 @@ final class HistoryListViewModel {
             highlightsByID = [:]
         }
         filteredIDs = filteredItems.map(\.id)
+        if !preservingSelection {
+            resultsResetToken += 1
+        }
         if let selectedID, let index = filteredIDs.firstIndex(of: selectedID) {
             selectedIndex = index
         } else if !preservingSelection {

@@ -156,6 +156,11 @@ struct HistoryCardStripView: View {
                 {
                     viewModel.quickPasteBase = idx
                 } else {
+                    // The anchor scrolled out of the new results (deleted or
+                    // filtered away): re-anchor to the first item instead of
+                    // leaving scrollPosition — and wheel scrolling, which keys
+                    // off this ID — pointing at a card that no longer exists.
+                    firstVisibleID = items.first?.id
                     viewModel.quickPasteBase = 0
                 }
             }
@@ -170,8 +175,14 @@ struct HistoryCardStripView: View {
                     firstVisibleID = items[target].id
                 }
             }
-            .onChange(of: viewModel.searchText) { _, newValue in
-                if newValue.isEmpty || reduceMotion {
+            .onChange(of: viewModel.resultsResetToken) { _, _ in
+                // The debounced search rebuilt the list for a new query: reset
+                // to the first result. Keying off the token (not searchText)
+                // guarantees filteredItems is fresh — searchText fires ~80ms
+                // before the debounce lands, and resetting then anchored the
+                // strip to the previous query's first match.
+                viewModel.quickPasteBase = 0
+                if viewModel.searchText.isEmpty || reduceMotion {
                     // Reset scroll instantly to prevent jumping
                     firstVisibleID = viewModel.filteredItems.first?.id
                 } else {
