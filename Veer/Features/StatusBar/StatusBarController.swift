@@ -179,7 +179,18 @@ final class StatusBarController: NSObject, StatusMenuActions, NSMenuDelegate {
         guard panel.runModal() == .OK, let url = panel.url else { return }
         do {
             let data = try Data(contentsOf: url)
-            try HistoryImportExport.importJSON(data, into: env.repository)
+            let count = try HistoryImportExport.importJSON(data, into: env.repository)
+            if count > 0 {
+                env.alerter.presentWarning(
+                    message: "Import Complete",
+                    informativeText: "\(count) clips imported."
+                )
+            } else {
+                env.alerter.presentWarning(
+                    message: "Nothing Imported",
+                    informativeText: "No clips were imported. The file may be empty or all clips are duplicates."
+                )
+            }
         } catch {
             env.alerter.presentError(error)
         }

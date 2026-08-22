@@ -97,10 +97,12 @@ struct ExportedBlob: Codable {
 
 /// Round-trips the full history to and from JSON for backup or transfer
 /// between machines.
+@MainActor
 enum HistoryImportExport {
     /// Serializes every clip (including images, PDFs and files) in the store.
+    /// Returns `nil` when the history is empty or the repository cannot be read.
     static func exportJSON(from repository: ClipRepository) -> Data? {
-        guard let items = try? repository.fetchAll(limit: nil) else { return nil }
+        guard let items = try? repository.fetchAll(limit: nil), !items.isEmpty else { return nil }
         let exported = items.map { item in
             ExportedClip(
                 id: item.id.uuidString,
@@ -118,8 +120,10 @@ enum HistoryImportExport {
 
     /// Inserts every clip from `data` into the store. Re-importing is
     /// best-effort: empty or duplicate clips are skipped by the repository.
-    static func importJSON(_ data: Data, into repository: ClipRepository) throws {
+    /// Returns the number of clips that were actually inserted.
+    static func importJSON(_ data: Data, into repository: ClipRepository) throws -> Int {
         let decoded = try JSONDecoder().decode([ExportedClip].self, from: data)
+        var imported = 0
         for clip in decoded {
             var typed: [String: Data] = [:]
             for blob in clip.blobs where !blob.dataBase64.isEmpty {
@@ -130,13 +134,16 @@ enum HistoryImportExport {
             guard !typed.isEmpty else { continue }
             let payload = ClipPayload(typed: typed)
             let preview = clip.preview ?? payload.plainTextPreview()
-            _ = try? repository.insert(
+            if let outcome = try? repository.insert(
                 payload: payload,
                 sourceBundleId: clip.sourceBundleId,
                 thumbnailPNG: nil,
                 payloadDigest: nil,
                 preview: preview
-            )
+            ), case .inserted = outcome {
+                imported += 1
+            }
         }
+        return imported
     }
 }

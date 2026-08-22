@@ -15,6 +15,7 @@ enum AccessibilityIdentifiers {
     static let preferencesButton = "preferencesButton"
     static let deleteSelectedButton = "deleteSelectedButton"
     static let clearHistoryButton = "clearHistoryButton"
+    static let historyButton = "historyButton"
     static let exportHistoryButton = "exportHistoryButton"
     static let importHistoryButton = "importHistoryButton"
     static let welcomeAllowAccessButton = "welcomeAllowAccessButton"

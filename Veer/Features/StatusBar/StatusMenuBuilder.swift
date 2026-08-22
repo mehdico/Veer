@@ -44,30 +44,15 @@ enum StatusMenuBuilder {
         // invisible clip.
         menu.addItem(deleteItem)
 
-        menu.addItem(makeItem(
-            symbol: "trash.slash",
-            title: "Clear history…",
-            action: #selector(StatusMenuActions.clearHistory(_:)),
-            identifier: AccessibilityIdentifiers.clearHistoryButton,
-            target: target
-        ))
-
-        menu.addItem(.separator())
-
-        menu.addItem(makeItem(
-            symbol: "square.and.arrow.up",
-            title: "Export History…",
-            action: #selector(StatusMenuActions.exportHistory(_:)),
-            identifier: AccessibilityIdentifiers.exportHistoryButton,
-            target: target
-        ))
-        menu.addItem(makeItem(
-            symbol: "square.and.arrow.down",
-            title: "Import History…",
-            action: #selector(StatusMenuActions.importHistory(_:)),
-            identifier: AccessibilityIdentifiers.importHistoryButton,
-            target: target
-        ))
+        let historyItem = makeItem(
+            symbol: "clock",
+            title: "History",
+            action: nil,
+            identifier: AccessibilityIdentifiers.historyButton,
+            target: nil
+        )
+        historyItem.submenu = makeHistorySubmenu(target: target)
+        menu.addItem(historyItem)
 
         menu.addItem(.separator())
 
@@ -144,6 +129,32 @@ enum StatusMenuBuilder {
             item.tag = position.rawValue
             submenu.addItem(item)
         }
+        return submenu
+    }
+
+    static func makeHistorySubmenu(target: StatusMenuActions) -> NSMenu {
+        let submenu = NSMenu(title: "History")
+        submenu.addItem(makeItem(
+            symbol: "trash.slash",
+            title: "Clear history…",
+            action: #selector(StatusMenuActions.clearHistory(_:)),
+            identifier: AccessibilityIdentifiers.clearHistoryButton,
+            target: target
+        ))
+        submenu.addItem(makeItem(
+            symbol: "square.and.arrow.up",
+            title: "Export History…",
+            action: #selector(StatusMenuActions.exportHistory(_:)),
+            identifier: AccessibilityIdentifiers.exportHistoryButton,
+            target: target
+        ))
+        submenu.addItem(makeItem(
+            symbol: "square.and.arrow.down",
+            title: "Import History…",
+            action: #selector(StatusMenuActions.importHistory(_:)),
+            identifier: AccessibilityIdentifiers.importHistoryButton,
+            target: target
+        ))
         return submenu
     }
 
