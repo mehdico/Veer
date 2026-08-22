@@ -127,11 +127,13 @@ private final class HotkeyCaptureController {
         isCapturing = true
         monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self else { return event }
+            if HotkeyRecorderRow.isModifierKey(event.keyCode) { return event }
+            var consumed = false
             MainActor.assumeIsolated {
-                if HotkeyRecorderRow.isModifierKey(event.keyCode) { return }
                 if event.keyCode == UInt16(kVK_Escape) {
                     self.stop()
                     onStop()
+                    consumed = true
                     return
                 }
                 let modifiers: UInt32 =
@@ -143,8 +145,9 @@ private final class HotkeyCaptureController {
                 env.registerHotkeys()
                 self.stop()
                 onStop()
+                consumed = true
             }
-            return nil
+            return consumed ? nil : event
         }
     }
 
