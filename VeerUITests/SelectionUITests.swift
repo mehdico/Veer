@@ -22,7 +22,7 @@ final class SelectionUITests: XCTestCase {
         let toggleItem = app.menuItems["toggleWindowButton"]
         XCTAssertTrue(toggleItem.waitForExistence(timeout: 2))
         toggleItem.click()
-        let panel = app.windows["yippyWindow"]
+        let panel = app.windows["veerWindow"]
         XCTAssertTrue(panel.waitForExistence(timeout: 3))
         return panel
     }
@@ -42,12 +42,12 @@ final class SelectionUITests: XCTestCase {
     }
 
     private func getFirstClipCell(_ panel: XCUIElement) -> XCUIElement {
-        let cells = panel.descendants(matching: .any).matching(identifier: "YippyTextCellView")
+        let cells = panel.descendants(matching: .any).matching(identifier: "VeerTextCellView")
         return cells.firstMatch
     }
 
     private func getClipCell(at index: Int, in panel: XCUIElement) -> XCUIElement {
-        let cells = panel.descendants(matching: .any).matching(identifier: "YippyTextCellView")
+        let cells = panel.descendants(matching: .any).matching(identifier: "VeerTextCellView")
         return cells.element(boundBy: index)
     }
 

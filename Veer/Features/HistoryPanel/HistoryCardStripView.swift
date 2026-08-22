@@ -131,7 +131,7 @@ struct HistoryCardStripView: View {
             .contentMargins(isVertical ? .vertical : .horizontal, 6, for: .scrollContent)
             .scrollTargetBehavior(.viewAligned)
             .scrollPosition(id: $firstVisibleID, anchor: isVertical ? .top : .leading)
-            .accessibilityIdentifier(AccessibilityIdentifiers.yippyTableView)
+            .accessibilityIdentifier(AccessibilityIdentifiers.veerTableView)
             .onAppear {
                 if firstVisibleID == nil {
                     firstVisibleID = viewModel.filteredItems.first?.id

@@ -21,7 +21,7 @@ final class PreviewUITests: XCTestCase {
         statusItem.click()
         app.menuItems["toggleWindowButton"].click()
 
-        let panel = app.windows["yippyWindow"]
+        let panel = app.windows["veerWindow"]
         XCTAssertTrue(panel.waitForExistence(timeout: 3))
 
         panel.typeKey(.space, modifierFlags: [])

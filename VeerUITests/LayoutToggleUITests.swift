@@ -21,7 +21,7 @@ final class LayoutToggleUITests: XCTestCase {
         statusItem.click()
         app.menuItems["toggleWindowButton"].click()
 
-        let panel = app.windows["yippyWindow"]
+        let panel = app.windows["veerWindow"]
         XCTAssertTrue(panel.waitForExistence(timeout: 3))
 
         statusItem.click()
@@ -31,7 +31,7 @@ final class LayoutToggleUITests: XCTestCase {
         topItem.click()
 
         XCTAssertTrue(panel.waitForExistence(timeout: 2))
-        let cell = panel.descendants(matching: .any)["YippyTextCellView"]
+        let cell = panel.descendants(matching: .any)["VeerTextCellView"]
         XCTAssertTrue(cell.waitForExistence(timeout: 2))
     }
 }

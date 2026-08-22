@@ -14,7 +14,7 @@ struct PdfCellView: View {
     private static let cache = NSCache<NSString, NSImage>()
 
     var body: some View {
-        CellChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyPdfCellView) {
+        CellChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.veerPdfCellView) {
             HStack(spacing: 10) {
                 if let thumbnail {
                     Image(nsImage: thumbnail)

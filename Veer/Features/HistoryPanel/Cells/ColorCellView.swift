@@ -16,7 +16,7 @@ struct ColorCellView: View {
     @State private var loaded = false
 
     var body: some View {
-        CellChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyColorCellView) {
+        CellChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.veerColorCellView) {
             HStack(spacing: 10) {
                 if previewsEnabled {
                     swatch

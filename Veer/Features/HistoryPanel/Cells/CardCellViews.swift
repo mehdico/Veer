@@ -75,7 +75,7 @@ struct TextCardView: View {
     var body: some View {
         CardChrome(
             isSelected: isSelected,
-            identifier: AccessibilityIdentifiers.yippyTextCellView,
+            identifier: AccessibilityIdentifiers.veerTextCellView,
             sourceBundleId: snapshot.sourceBundleId,
             timeLabel: snapshot.relativeTimeLabel
         ) {
@@ -107,7 +107,7 @@ struct RichTextCardView: View {
     var body: some View {
         CardChrome(
             isSelected: isSelected,
-            identifier: AccessibilityIdentifiers.yippyRichTextCellView,
+            identifier: AccessibilityIdentifiers.veerRichTextCellView,
             sourceBundleId: snapshot.sourceBundleId,
             timeLabel: snapshot.relativeTimeLabel
         ) {
@@ -158,7 +158,7 @@ struct ImageCardView: View {
     @State private var hasThumbnail = false
 
     var body: some View {
-        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyTiffCellView, sourceBundleId: snapshot.sourceBundleId, timeLabel: snapshot.relativeTimeLabel) {
+        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.veerTiffCellView, sourceBundleId: snapshot.sourceBundleId, timeLabel: snapshot.relativeTimeLabel) {
             if viewModel.previewsEnabled {
                 ClipThumbnailImage(clipID: snapshot.id) {
                     viewModel.thumbnailPNG(for: snapshot.id)
@@ -197,7 +197,7 @@ struct ColorCardView: View {
     @State private var loaded = false
 
     var body: some View {
-        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyColorCellView, sourceBundleId: snapshot.sourceBundleId, timeLabel: snapshot.relativeTimeLabel) {
+        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.veerColorCellView, sourceBundleId: snapshot.sourceBundleId, timeLabel: snapshot.relativeTimeLabel) {
             if previewsEnabled {
                 ZStack(alignment: .bottomLeading) {
                     swatch
@@ -303,7 +303,7 @@ struct PdfCardView: View {
     private static let cache = NSCache<NSString, NSImage>()
 
     var body: some View {
-        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyPdfCellView, sourceBundleId: snapshot.sourceBundleId, timeLabel: snapshot.relativeTimeLabel) {
+        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.veerPdfCellView, sourceBundleId: snapshot.sourceBundleId, timeLabel: snapshot.relativeTimeLabel) {
             VStack(spacing: 6) {
                 if let thumbnail {
                     Image(nsImage: thumbnail)
@@ -402,8 +402,8 @@ struct FileCardView: View {
 
     private var identifier: String {
         thumbnail != nil
-            ? AccessibilityIdentifiers.yippyFileThumbnailCellView
-            : AccessibilityIdentifiers.yippyFileIconCellView
+            ? AccessibilityIdentifiers.veerFileThumbnailCellView
+            : AccessibilityIdentifiers.veerFileIconCellView
     }
 
     @ViewBuilder

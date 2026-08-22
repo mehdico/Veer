@@ -14,7 +14,7 @@ struct RichTextCellView: View {
     private static let cache = NSCache<NSString, NSAttributedString>()
 
     var body: some View {
-        CellChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyRichTextCellView) {
+        CellChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.veerRichTextCellView) {
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: "doc.richtext")
                     .foregroundStyle(.secondary)

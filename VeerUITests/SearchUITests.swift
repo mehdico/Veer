@@ -21,7 +21,7 @@ final class SearchUITests: XCTestCase {
         statusItem.click()
         app.menuItems["toggleWindowButton"].click()
 
-        let panel = app.windows["yippyWindow"]
+        let panel = app.windows["veerWindow"]
         XCTAssertTrue(panel.waitForExistence(timeout: 3))
 
         let searchField = panel.textFields.firstMatch
@@ -29,10 +29,10 @@ final class SearchUITests: XCTestCase {
         searchField.click()
         searchField.typeText("Plain")
 
-        let textCell = panel.descendants(matching: .any)["YippyTextCellView"]
+        let textCell = panel.descendants(matching: .any)["VeerTextCellView"]
         XCTAssertTrue(textCell.waitForExistence(timeout: 2))
 
-        let imageCell = panel.descendants(matching: .any)["YippyTiffCellView"]
+        let imageCell = panel.descendants(matching: .any)["VeerTiffCellView"]
         XCTAssertFalse(imageCell.exists, "Image cell should be filtered out")
     }
 }

@@ -33,7 +33,7 @@ final class PositionHotkeyUITests: XCTestCase {
             let item = app.menuItems[id]
             XCTAssertTrue(item.waitForExistence(timeout: 2), "Position item \(id) not found")
             item.click()
-            XCTAssertTrue(app.windows["yippyWindow"].waitForExistence(timeout: 2),
+            XCTAssertTrue(app.windows["veerWindow"].waitForExistence(timeout: 2),
                           "Panel did not appear after \(id)")
         }
     }

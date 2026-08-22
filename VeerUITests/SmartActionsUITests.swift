@@ -22,7 +22,7 @@ final class SmartActionsUITests: XCTestCase {
         let toggleItem = app.menuItems["toggleWindowButton"]
         XCTAssertTrue(toggleItem.waitForExistence(timeout: 2))
         toggleItem.click()
-        let panel = app.windows["yippyWindow"]
+        let panel = app.windows["veerWindow"]
         XCTAssertTrue(panel.waitForExistence(timeout: 3))
         return panel
     }
@@ -139,7 +139,7 @@ final class SmartActionsUITests: XCTestCase {
         let panel = openPanel()
         search(panel, for: "veer")
 
-        let cell = panel.descendants(matching: .any)["YippyTextCellView"]
+        let cell = panel.descendants(matching: .any)["VeerTextCellView"]
         XCTAssertTrue(cell.waitForExistence(timeout: 2))
         cell.rightClick()
 

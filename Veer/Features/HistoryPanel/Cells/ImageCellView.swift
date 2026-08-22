@@ -7,7 +7,7 @@ struct ImageCellView: View {
     let viewModel: HistoryListViewModel
 
     var body: some View {
-        CellChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyTiffCellView) {
+        CellChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.veerTiffCellView) {
             HStack(spacing: 10) {
                 if viewModel.previewsEnabled {
                     ClipThumbnailImage(clipID: snapshot.id) {

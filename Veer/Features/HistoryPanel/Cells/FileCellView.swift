@@ -51,8 +51,8 @@ struct FileCellView: View {
 
     private var identifier: String {
         thumbnail != nil
-            ? AccessibilityIdentifiers.yippyFileThumbnailCellView
-            : AccessibilityIdentifiers.yippyFileIconCellView
+            ? AccessibilityIdentifiers.veerFileThumbnailCellView
+            : AccessibilityIdentifiers.veerFileIconCellView
     }
 
     @ViewBuilder

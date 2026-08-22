@@ -24,7 +24,7 @@ final class PanelToggleUITests: XCTestCase {
         XCTAssertTrue(toggleItem.waitForExistence(timeout: 2))
         toggleItem.click()
 
-        let panel = app.windows["yippyWindow"]
+        let panel = app.windows["veerWindow"]
         XCTAssertTrue(panel.waitForExistence(timeout: 3))
 
         statusItem.click()

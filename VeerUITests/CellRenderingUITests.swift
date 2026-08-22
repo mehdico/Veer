@@ -21,15 +21,15 @@ final class CellRenderingUITests: XCTestCase {
         statusItem.click()
         app.menuItems["toggleWindowButton"].click()
 
-        let panel = app.windows["yippyWindow"]
+        let panel = app.windows["veerWindow"]
         XCTAssertTrue(panel.waitForExistence(timeout: 3))
 
         let identifiers = [
-            "YippyTextCellView",
-            "YippyRichTextCellView",
-            "YippyTiffCellView",
-            "YippyColorCellView",
-            "YippyPdfCellView",
+            "VeerTextCellView",
+            "VeerRichTextCellView",
+            "VeerTiffCellView",
+            "VeerColorCellView",
+            "VeerPdfCellView",
         ]
         for id in identifiers {
             XCTAssertTrue(
@@ -38,8 +38,8 @@ final class CellRenderingUITests: XCTestCase {
             )
         }
 
-        let fileFound = panel.descendants(matching: .any)["YippyFileIconCellView"].exists
-            || panel.descendants(matching: .any)["YippyFileThumbnailCellView"].exists
+        let fileFound = panel.descendants(matching: .any)["VeerFileIconCellView"].exists
+            || panel.descendants(matching: .any)["VeerFileThumbnailCellView"].exists
         XCTAssertTrue(fileFound, "Missing file cell (icon or thumbnail variant)")
     }
 }

@@ -17,7 +17,7 @@ final class PanelWindow: NSPanel {
         isOpaque = false
         hasShadow = true
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
-        setAccessibilityIdentifier(AccessibilityIdentifiers.yippyWindow)
+        setAccessibilityIdentifier(AccessibilityIdentifiers.veerWindow)
 
         setupVisualEffectView()
     }

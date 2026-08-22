@@ -9,7 +9,7 @@ struct TextCellView: View {
     var highlightRanges: [Range<String.Index>] = []
 
     var body: some View {
-        CellChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.yippyTextCellView) {
+        CellChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.veerTextCellView) {
             HStack(alignment: .top, spacing: 10) {
                 sourceIcon
                     .frame(width: 18, height: 18)

@@ -88,7 +88,7 @@ struct HistoryListView: View {
                     value: viewModel.filteredIDs
                 )
             }
-            .accessibilityIdentifier(AccessibilityIdentifiers.yippyTableView)
+            .accessibilityIdentifier(AccessibilityIdentifiers.veerTableView)
             .onChange(of: viewModel.selectedIndex) { oldIndex, newIndex in
                 let items = viewModel.filteredItems
                 guard items.indices.contains(newIndex) else { return }
