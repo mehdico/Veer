@@ -92,7 +92,7 @@ enum ClipAction: Identifiable, Hashable, Sendable {
         case .copyUIColor: "copyUIColor"
         case .copyQR: "copyQR"
         case .pin: "pin"
-        case .unpin: "unpin"
+        case .unpin: "pin.slash"
         }
     }
 
@@ -193,7 +193,6 @@ enum ClipAction: Identifiable, Hashable, Sendable {
         case .pin: "pin"
         case .unpin: "pin.slash"
         }
-    }
     }
 
     /// How the panel behaves after running this action. Launching actions hand
