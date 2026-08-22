@@ -11,7 +11,7 @@ private struct CarbonHotkeyRegistration {
 final class CarbonHotkeyService: HotkeyService {
     private static let signature: OSType = 0x56454552 // 'VEER'
 
-    nonisolated(unsafe) private var registrations: [HotkeyShortcut: CarbonHotkeyRegistration] = [:]
+    nonisolated(unsafe) private var registrations: [UInt32: CarbonHotkeyRegistration] = [:]
     // Static: `dispatchTable` below is shared across instances, so per-instance
     // counters would collide and overwrite each other's handlers.
     nonisolated(unsafe) private static var nextID: UInt32 = 1
@@ -38,27 +38,29 @@ final class CarbonHotkeyService: HotkeyService {
     }
 
     func register(_ shortcut: HotkeyShortcut, handler: @escaping () -> Void) {
-        if let existing = registrations.removeValue(forKey: shortcut) {
-            UnregisterEventHotKey(existing.ref)
-            Self.dispatchTable.removeValue(forKey: existing.id)
-        }
+        let binding = shortcut.`default`
+        register(keyCode: binding.keyCode, modifiers: binding.modifiers, handler: handler)
+    }
+
+    func register(keyCode: UInt32, modifiers: UInt32, handler: @escaping () -> Void) {
         let id = Self.nextID
         Self.nextID += 1
         let hotKeyID = EventHotKeyID(signature: Self.signature, id: id)
         var ref: EventHotKeyRef?
         let status = RegisterEventHotKey(
-            shortcut.keyCode,
-            shortcut.modifiers,
+            keyCode,
+            modifiers,
             hotKeyID,
             GetApplicationEventTarget(),
             0,
             &ref
         )
         guard status == noErr, let ref else {
-            logger.warning("Failed to register hotkey \(shortcut.rawValue) (status \(status)). Accessibility permission may be missing.")
+            Self.nextID -= 1
+            logger.warning("Failed to register hotkey (keyCode \(keyCode)) (status \(status)). Accessibility permission may be missing, or the combo is already taken.")
             return
         }
-        registrations[shortcut] = CarbonHotkeyRegistration(id: id, ref: ref, handler: handler)
+        registrations[id] = CarbonHotkeyRegistration(id: id, ref: ref, handler: handler)
         Self.dispatchTable[id] = handler
     }
 

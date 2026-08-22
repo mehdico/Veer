@@ -50,6 +50,26 @@ final class AppEnvironment {
         self.alerter = alerter
     }
 
+    /// (Re)registers every global hotkey, resolving each shortcut from the
+    /// current settings, so a user-recorded shortcut takes effect immediately
+    /// without a relaunch.
+    func registerHotkeys() {
+        hotkeys.unregisterAll()
+        for shortcut in HotkeyShortcut.allCases {
+            let binding = shortcut.resolvedBinding(using: settings.customHotkeys)
+            hotkeys.register(keyCode: binding.keyCode, modifiers: binding.modifiers) { [weak self] in
+                guard let self else { return }
+                switch shortcut {
+                case .togglePanel: self.panel.toggle()
+                case .positionLeft: self.panel.move(to: .left)
+                case .positionRight: self.panel.move(to: .right)
+                case .positionTop: self.panel.move(to: .top)
+                case .positionBottom: self.panel.move(to: .bottom)
+                }
+            }
+        }
+    }
+
     static func live() -> AppEnvironment {
         let alerter = NSAlerter()
         let container: ModelContainer
@@ -179,6 +199,7 @@ final class StaticAccessChecker: AccessChecking {
 @MainActor
 final class NoopHotkeyService: HotkeyService {
     func register(_ shortcut: HotkeyShortcut, handler: @escaping () -> Void) {}
+    func register(keyCode: UInt32, modifiers: UInt32, handler: @escaping () -> Void) {}
     func unregisterAll() {}
 }
 

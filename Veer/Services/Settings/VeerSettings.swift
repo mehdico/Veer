@@ -13,6 +13,9 @@ struct VeerSettings: Codable, Sendable, Equatable {
     var didSeedDefaultIgnoredApps: Bool = false
     var hasSeenActionsHint: Bool = false
     var panelSizeByPosition: [Int: PanelSize] = [:]
+    /// User-recorded hotkey overrides, keyed by `HotkeyShortcut.rawValue`
+    /// mapping to `[keyCode, carbonModifiers]`.
+    var customHotkeys: [String: [Int]] = [:]
 }
 
 extension VeerSettings {
@@ -29,6 +32,7 @@ extension VeerSettings {
         case didSeedDefaultIgnoredApps
         case hasSeenActionsHint
         case panelSizeByPosition
+        case customHotkeys
     }
 
     /// Decodes with per-key fallbacks so settings saved before a field existed
@@ -48,6 +52,7 @@ extension VeerSettings {
         self.didSeedDefaultIgnoredApps = try container.decodeIfPresent(Bool.self, forKey: .didSeedDefaultIgnoredApps) ?? false
         self.hasSeenActionsHint = try container.decodeIfPresent(Bool.self, forKey: .hasSeenActionsHint) ?? false
         self.panelSizeByPosition = try container.decodeIfPresent([Int: PanelSize].self, forKey: .panelSizeByPosition) ?? [:]
+        self.customHotkeys = try container.decodeIfPresent([String: [Int]].self, forKey: .customHotkeys) ?? [:]
     }
 }
 

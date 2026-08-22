@@ -22,6 +22,9 @@ final class SettingsStore {
         }
     }
     private(set) var panelSizeByPosition: [Int: PanelSize] { didSet { persist() } }
+    var customHotkeys: [String: [Int]] {
+        didSet { persist() }
+    }
 
     @ObservationIgnored let defaults: UserDefaults
     @ObservationIgnored private let didSeedDefaultIgnoredApps: Bool
@@ -45,6 +48,7 @@ final class SettingsStore {
         self.hasSeenActionsHint = loaded.hasSeenActionsHint
         self.ignoredAppBundleIds = loaded.ignoredAppBundleIds
         self.panelSizeByPosition = loaded.panelSizeByPosition
+        self.customHotkeys = loaded.customHotkeys
     }
 
     var snapshot: VeerSettings {
@@ -60,7 +64,8 @@ final class SettingsStore {
             ignoresPasswordManagers: ignoresPasswordManagers,
             didSeedDefaultIgnoredApps: didSeedDefaultIgnoredApps,
             hasSeenActionsHint: hasSeenActionsHint,
-            panelSizeByPosition: panelSizeByPosition
+            panelSizeByPosition: panelSizeByPosition,
+            customHotkeys: customHotkeys
         )
     }
 

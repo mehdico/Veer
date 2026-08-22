@@ -10,6 +10,10 @@ final class MockHotkeyService: HotkeyService {
         handlers[shortcut] = handler
     }
 
+    func register(keyCode: UInt32, modifiers: UInt32, handler: @escaping () -> Void) {
+        handlers[.togglePanel] = handler
+    }
+
     func unregisterAll() {
         handlers.removeAll()
         unregisterCalls += 1

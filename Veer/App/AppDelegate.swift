@@ -15,7 +15,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panelController = PanelWindowController(env: environment, coordinator: environment.panel)
         previewController = PreviewWindowController(env: environment, coordinator: environment.preview)
 
-        registerHotkeys()
+        environment.registerHotkeys()
         environment.ingestor.start()
 
         if !environment.access.isTrusted() {
@@ -26,24 +26,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         environment.ingestor.stop()
         environment.hotkeys.unregisterAll()
-    }
-
-    private func registerHotkeys() {
-        environment.hotkeys.register(.togglePanel) { [weak self] in
-            self?.environment.panel.toggle()
-        }
-        environment.hotkeys.register(.positionLeft) { [weak self] in
-            self?.environment.panel.move(to: .left)
-        }
-        environment.hotkeys.register(.positionRight) { [weak self] in
-            self?.environment.panel.move(to: .right)
-        }
-        environment.hotkeys.register(.positionTop) { [weak self] in
-            self?.environment.panel.move(to: .top)
-        }
-        environment.hotkeys.register(.positionBottom) { [weak self] in
-            self?.environment.panel.move(to: .bottom)
-        }
     }
 
     private func showWelcomeWindow() {

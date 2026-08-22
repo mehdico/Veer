@@ -8,13 +8,13 @@ struct HotkeysTab: View {
     var body: some View {
         Form {
             Section("Open the panel") {
-                row(title: "Show or hide Veer", shortcut: .togglePanel)
+                recorderRow(title: "Show or hide Veer", shortcut: .togglePanel)
             }
             Section("Move the panel") {
-                row(title: "Left edge", shortcut: .positionLeft)
-                row(title: "Right edge", shortcut: .positionRight)
-                row(title: "Top edge", shortcut: .positionTop)
-                row(title: "Bottom edge", shortcut: .positionBottom)
+                recorderRow(title: "Left edge", shortcut: .positionLeft)
+                recorderRow(title: "Right edge", shortcut: .positionRight)
+                recorderRow(title: "Top edge", shortcut: .positionTop)
+                recorderRow(title: "Bottom edge", shortcut: .positionBottom)
             }
             Section("While the panel is open") {
                 staticRow(keys: "↓ / →", description: "Open the action strip (↓ cards, → list)")
@@ -37,6 +37,10 @@ struct HotkeysTab: View {
         .padding(8)
     }
 
+    private func recorderRow(title: String, shortcut: HotkeyShortcut) -> some View {
+        HotkeyRecorderRow(title: title, shortcut: shortcut, env: env)
+    }
+
     @ViewBuilder
     private func staticRow(keys: String, description: String) -> some View {
         HStack {
@@ -50,40 +54,111 @@ struct HotkeysTab: View {
                 .clipShape(RoundedRectangle(cornerRadius: 4))
         }
     }
+}
 
-    private func row(title: String, shortcut: HotkeyShortcut) -> some View {
+/// A settings row that shows the current binding for a shortcut and, when
+/// clicked, captures the next key press as a new binding. The captured combo is
+/// written to settings and applied live via `AppEnvironment.registerHotkeys()`.
+private struct HotkeyRecorderRow: View {
+    let title: String
+    let shortcut: HotkeyShortcut
+    let env: AppEnvironment
+
+    @State private var isCapturing = false
+    @State private var controller = HotkeyCaptureController()
+
+    private var binding: HotkeyBinding {
+        shortcut.resolvedBinding(using: env.settings.customHotkeys)
+    }
+
+    var body: some View {
         HStack {
             Text(title)
             Spacer()
-            Text(displayString(for: shortcut))
-                .font(.system(.body, design: .monospaced))
-                .padding(.vertical, 3)
-                .padding(.horizontal, 8)
-                .background(Color.secondary.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 4))
-                .accessibilityIdentifier("settingsHotkey_\(shortcut.rawValue)")
+            if env.settings.customHotkeys[shortcut.rawValue] != nil {
+                Button(action: reset) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("Reset to default")
+                .accessibilityIdentifier("settingsHotkeyReset_\(shortcut.rawValue)")
+            }
+            Button(action: toggleCapture) {
+                Text(isCapturing
+                      ? "Press keys…"
+                      : HotkeyFormatter.displayString(keyCode: binding.keyCode, modifiers: binding.modifiers))
+                    .frame(minWidth: 90)
+            }
+            .accessibilityIdentifier("settingsHotkeyRecord_\(shortcut.rawValue)")
+        }
+        .onDisappear(perform: stopCapture)
+    }
+
+    private func toggleCapture() {
+        if controller.isCapturing { stopCapture() } else { startCapture() }
+    }
+
+    private func startCapture() {
+        controller.start(shortcut: shortcut, env: env) { isCapturing = false }
+        isCapturing = true
+    }
+
+    private func stopCapture() {
+        controller.stop()
+        isCapturing = false
+    }
+
+    private func reset() {
+        env.settings.customHotkeys[shortcut.rawValue] = nil
+        env.registerHotkeys()
+    }
+}
+
+/// Owns the local event monitor used while recording a hotkey. A reference
+/// type so the escaping monitor closure can mutate its own state (remove
+/// itself) without fighting SwiftUI's value-type `@State` capture rules.
+private final class HotkeyCaptureController {
+    var monitor: Any?
+    var isCapturing = false
+
+    func start(shortcut: HotkeyShortcut, env: AppEnvironment, onStop: @escaping () -> Void) {
+        guard monitor == nil else { return }
+        isCapturing = true
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self else { return event }
+            MainActor.assumeIsolated {
+                if HotkeyRecorderRow.isModifierKey(event.keyCode) { return }
+                if event.keyCode == UInt16(kVK_Escape) {
+                    self.stop()
+                    onStop()
+                    return
+                }
+                let modifiers: UInt32 =
+                    (event.modifierFlags.contains(.command) ? UInt32(cmdKey) : 0)
+                    | (event.modifierFlags.contains(.shift) ? UInt32(shiftKey) : 0)
+                    | (event.modifierFlags.contains(.option) ? UInt32(optionKey) : 0)
+                    | (event.modifierFlags.contains(.control) ? UInt32(controlKey) : 0)
+                env.settings.customHotkeys[shortcut.rawValue] = [Int(event.keyCode), Int(modifiers)]
+                env.registerHotkeys()
+                self.stop()
+                onStop()
+            }
+            return nil
         }
     }
 
-    private func displayString(for shortcut: HotkeyShortcut) -> String {
-        var parts: [String] = []
-        let mods = shortcut.modifiers
-        if mods & UInt32(controlKey) != 0 { parts.append("⌃") }
-        if mods & UInt32(optionKey) != 0 { parts.append("⌥") }
-        if mods & UInt32(shiftKey) != 0 { parts.append("⇧") }
-        if mods & UInt32(cmdKey) != 0 { parts.append("⌘") }
-        parts.append(keyName(for: shortcut.keyCode))
-        return parts.joined()
+    func stop() {
+        if let monitor { NSEvent.removeMonitor(monitor) }
+        self.monitor = nil
+        isCapturing = false
     }
+}
 
-    private func keyName(for code: UInt32) -> String {
-        switch Int(code) {
-        case kVK_ANSI_V: return "V"
-        case kVK_LeftArrow: return "←"
-        case kVK_RightArrow: return "→"
-        case kVK_UpArrow: return "↑"
-        case kVK_DownArrow: return "↓"
-        default: return String(format: "0x%02X", code)
-        }
+private extension HotkeyRecorderRow {
+    static func isModifierKey(_ keyCode: UInt16) -> Bool {
+        [kVK_Command, kVK_Shift, kVK_CapsLock, kVK_Option, kVK_Control,
+         kVK_RightCommand, kVK_RightShift, kVK_RightOption, kVK_RightControl]
+            .contains(Int(keyCode))
     }
 }
