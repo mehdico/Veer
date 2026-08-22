@@ -76,3 +76,42 @@ enum Constants {
         static let glassBorderWidth: CGFloat = 0.5
     }
 }
+
+// MARK: - Localization scaffolding
+
+/// Centralized, localizable string table. This is the scaffolding for full
+/// localization: the English base lives here so every user-facing string has
+/// one lookup point. To externalize, move these keys into an Xcode String
+/// Catalog (`.xcstrings`) added to the target and switch `VeerLocalized` to
+/// `String(localized:)`. `NSLocalizedString` falls back to the key when no
+/// catalog is present, so keeping the *key* equal to the English base keeps
+/// behavior identical until the catalog is wired up.
+enum VeerStrings {
+    static let table: [String: String] = [
+        "menu.showVeer": "Show Veer",
+        "menu.hideVeer": "Hide Veer",
+        "menu.exportHistory": "Export History…",
+        "menu.importHistory": "Import History…",
+        "menu.clearHistory": "Clear history…",
+        "menu.settings": "Settings…",
+        "menu.help": "Help",
+        "menu.about": "About Veer",
+        "menu.quit": "Quit Veer",
+        "alert.deleteClip.title": "Delete clip?",
+        "alert.deleteClip.message": "This removes %@ from your history. This can't be undone.",
+        "alert.clearHistory.title": "Clear history?",
+        "alert.clearHistory.message": "This removes every clip from your history. This can't be undone.",
+    ]
+
+    /// Returns the localized value for `key`, falling back to the base English
+    /// table and finally the key itself.
+    static func localized(_ key: String) -> String {
+        table[key] ?? key
+    }
+}
+
+/// Localized-string lookup. Mirrors `String(localized:)` so call sites are
+/// already wired for a future String Catalog.
+func VeerLocalized(_ key: String) -> String {
+    VeerStrings.localized(key)
+}
