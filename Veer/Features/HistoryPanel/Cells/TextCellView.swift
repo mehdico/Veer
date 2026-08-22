@@ -9,7 +9,7 @@ struct TextCellView: View {
     var highlightRanges: [Range<String.Index>] = []
 
     var body: some View {
-        CellChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.veerTextCellView) {
+        CellChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.veerTextCellView, pinned: snapshot.pinned) {
             HStack(alignment: .top, spacing: 10) {
                 sourceIcon
                     .frame(width: 18, height: 18)
@@ -35,6 +35,12 @@ struct TextCellView: View {
         HStack(spacing: 6) {
             if let bundle = snapshot.sourceBundleId {
                 Text(sourceAppName(for: bundle))
+            }
+            if snapshot.pinned {
+                Image(systemName: "pin.fill")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(Color.accentColor)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.pinnedBadge)
             }
             Text(snapshot.relativeTimeLabel)
         }

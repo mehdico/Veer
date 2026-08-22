@@ -7,7 +7,7 @@ struct ImageCellView: View {
     let viewModel: HistoryListViewModel
 
     var body: some View {
-        CellChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.veerTiffCellView) {
+        CellChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.veerTiffCellView, pinned: snapshot.pinned) {
             HStack(spacing: 10) {
                 if viewModel.previewsEnabled {
                     ClipThumbnailImage(clipID: snapshot.id) {
@@ -36,6 +36,12 @@ struct ImageCellView: View {
         HStack(spacing: 6) {
             if let bundle = snapshot.sourceBundleId {
                 Text(bundle)
+            }
+            if snapshot.pinned {
+                Image(systemName: "pin.fill")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(Color.accentColor)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.pinnedBadge)
             }
             Text(snapshot.relativeTimeLabel)
         }

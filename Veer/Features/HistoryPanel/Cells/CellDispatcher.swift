@@ -45,15 +45,6 @@ func clipCellView(
         }
     }
     content
-        .overlay(alignment: .topLeading) {
-            if snapshot.pinned {
-                Image(systemName: "pin.fill")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(.secondary)
-                    .padding(4)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.pinnedBadge)
-            }
-        }
 }
 
 /// Right-click menu for a clip: a Smart Actions submenu listing the detected

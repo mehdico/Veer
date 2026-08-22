@@ -3,8 +3,16 @@ import SwiftUI
 struct CellChrome<Content: View>: View {
     let isSelected: Bool
     let identifier: String
+    let pinned: Bool
     @State private var isHovered = false
     @ViewBuilder let content: () -> Content
+
+    init(isSelected: Bool, identifier: String, pinned: Bool = false, @ViewBuilder content: @escaping () -> Content) {
+        self.isSelected = isSelected
+        self.identifier = identifier
+        self.pinned = pinned
+        self.content = content
+    }
 
     var body: some View {
         content()
@@ -18,13 +26,14 @@ struct CellChrome<Content: View>: View {
                             .fill(Color.accentColor.opacity(0.22))
                         RoundedRectangle(cornerRadius: 8)
                             .stroke(Color.accentColor, lineWidth: 2)
-                        // Solid leading bar so the selected row stays visible
-                        // even with low-contrast system accent colors.
                         Capsule()
                             .fill(Color.accentColor)
                             .frame(width: 4)
                             .padding(.vertical, 4)
                             .padding(.leading, 2)
+                    } else if pinned {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.accentColor.opacity(0.12))
                     } else if isHovered {
                         RoundedRectangle(cornerRadius: 8)
                             .fill(Color.primary.opacity(0.06))
