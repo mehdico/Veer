@@ -89,9 +89,13 @@ struct HistoryListView: View {
                 )
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.yippyTableView)
-            .onChange(of: viewModel.selectedIndex) { _, newIndex in
+            .onChange(of: viewModel.selectedIndex) { oldIndex, newIndex in
                 let items = viewModel.filteredItems
                 guard items.indices.contains(newIndex) else { return }
+                // Only scroll if this is a keyboard navigation (small incremental change)
+                // Mouse clicks typically jump to arbitrary indices and the item is already visible
+                let isKeyboardNavigation = abs(newIndex - (oldIndex ?? newIndex)) <= 1
+                guard isKeyboardNavigation else { return }
                 var transaction = Transaction()
                 transaction.disablesAnimations = true
                 withTransaction(transaction) {
@@ -114,8 +118,12 @@ struct HistoryListView: View {
                 }
             }
             .onChange(of: coordinator.isShown) { _, shown in
-                if shown, let firstID = viewModel.filteredItems.first?.id {
-                    proxy.scrollTo(firstID, anchor: .top)
+                if shown {
+                    // Delay scroll slightly to ensure filteredItems are updated after resetForShow
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        guard let firstID = viewModel.filteredItems.first?.id else { return }
+                        proxy.scrollTo(firstID, anchor: .top)
+                    }
                 }
             }
         }
