@@ -18,7 +18,8 @@ protocol ClipRepository: AnyObject {
         sourceBundleId: String?,
         thumbnailPNG: Data?,
         payloadDigest: Data?,
-        preview: String?
+        preview: String?,
+        createdAt: Date?
     ) throws -> InsertOutcome
     func fetchAll(limit: Int?) throws -> [ClipItem]
     func fetchOne(id: UUID) throws -> ClipItem?
@@ -35,11 +36,11 @@ protocol ClipRepository: AnyObject {
 
 extension ClipRepository {
     func insert(payload: ClipPayload, sourceBundleId: String?) throws -> InsertOutcome {
-        try insert(payload: payload, sourceBundleId: sourceBundleId, thumbnailPNG: nil, payloadDigest: nil, preview: nil)
+        try insert(payload: payload, sourceBundleId: sourceBundleId, thumbnailPNG: nil, payloadDigest: nil, preview: nil, createdAt: nil)
     }
 
     func insert(payload: ClipPayload, sourceBundleId: String?, thumbnailPNG: Data?) throws -> InsertOutcome {
-        try insert(payload: payload, sourceBundleId: sourceBundleId, thumbnailPNG: thumbnailPNG, payloadDigest: nil, preview: nil)
+        try insert(payload: payload, sourceBundleId: sourceBundleId, thumbnailPNG: thumbnailPNG, payloadDigest: nil, preview: nil, createdAt: nil)
     }
 
     func insert(
@@ -48,7 +49,17 @@ extension ClipRepository {
         thumbnailPNG: Data?,
         payloadDigest: Data?
     ) throws -> InsertOutcome {
-        try insert(payload: payload, sourceBundleId: sourceBundleId, thumbnailPNG: thumbnailPNG, payloadDigest: payloadDigest, preview: nil)
+        try insert(payload: payload, sourceBundleId: sourceBundleId, thumbnailPNG: thumbnailPNG, payloadDigest: payloadDigest, preview: nil, createdAt: nil)
+    }
+
+    func insert(
+        payload: ClipPayload,
+        sourceBundleId: String?,
+        thumbnailPNG: Data?,
+        payloadDigest: Data?,
+        preview: String?
+    ) throws -> InsertOutcome {
+        try insert(payload: payload, sourceBundleId: sourceBundleId, thumbnailPNG: thumbnailPNG, payloadDigest: payloadDigest, preview: preview, createdAt: nil)
     }
 
     func fetchBlob(id: UUID, type: String) throws -> Data? {
@@ -139,7 +150,8 @@ enum HistoryImportExport {
                 sourceBundleId: clip.sourceBundleId,
                 thumbnailPNG: nil,
                 payloadDigest: nil,
-                preview: preview
+                preview: preview,
+                createdAt: clip.createdAt
             ), case .inserted = outcome {
                 imported += 1
             }
