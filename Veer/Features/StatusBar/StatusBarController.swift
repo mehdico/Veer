@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 @MainActor
 final class StatusBarController: NSObject, StatusMenuActions, NSMenuDelegate {
@@ -147,6 +148,52 @@ final class StatusBarController: NSObject, StatusMenuActions, NSMenuDelegate {
     func selectPosition(_ sender: NSMenuItem) {
         guard let position = PanelPosition(rawValue: sender.tag) else { return }
         env.panel.move(to: position)
+    }
+
+    func exportHistory(_ sender: Any?) {
+        guard let data = HistoryImportExport.exportJSON(from: env.repository) else {
+            env.alerter.presentWarning(
+                message: "Nothing to export",
+                informativeText: "Your clipboard history is empty."
+            )
+            return
+        }
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "Veer History.json"
+        panel.allowedContentTypes = [.json]
+        panel.canCreateDirectories = true
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try data.write(to: url, options: .atomic)
+        } catch {
+            env.alerter.presentError(error)
+        }
+    }
+
+    func importHistory(_ sender: Any?) {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.allowedContentTypes = [.json]
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            let data = try Data(contentsOf: url)
+            let count = try HistoryImportExport.importJSON(data, into: env.repository)
+            if count > 0 {
+                env.alerter.presentWarning(
+                    message: "Import Complete",
+                    informativeText: "\(count) clips imported."
+                )
+            } else {
+                env.alerter.presentWarning(
+                    message: "Nothing Imported",
+                    informativeText: "No clips were imported. The file may be empty or all clips are duplicates."
+                )
+            }
+        } catch {
+            env.alerter.presentError(error)
+        }
     }
 
     func quit(_ sender: Any?) {

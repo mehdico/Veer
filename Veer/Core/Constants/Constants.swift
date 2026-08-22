@@ -93,6 +93,7 @@ enum VeerStrings {
         "menu.exportHistory": "Export History…",
         "menu.importHistory": "Import History…",
         "menu.clearHistory": "Clear history…",
+        "menu.history": "History",
         "menu.settings": "Settings…",
         "menu.help": "Help",
         "menu.about": "About Veer",

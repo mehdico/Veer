@@ -40,7 +40,8 @@ final class ClipRepositoryLive: ClipRepository {
         sourceBundleId: String?,
         thumbnailPNG: Data?,
         payloadDigest: Data?,
-        preview: String? = nil
+        preview: String? = nil,
+        createdAt: Date? = nil
     ) throws -> InsertOutcome {
         if payload.isEmpty {
             logger.info("insert rejected: empty payload (bundle=\(sourceBundleId ?? "nil"))")
@@ -59,6 +60,7 @@ final class ClipRepositoryLive: ClipRepository {
         }
 
         let item = ClipItem(
+            createdAt: createdAt ?? Date(),
             sourceBundleId: sourceBundleId,
             typeRawValues: payload.typed.keys.sorted(),
             preview: preview,

@@ -9,6 +9,8 @@ import AppKit
     @objc func toggleLaunchAtLogin(_ sender: Any?)
     @objc func deleteSelected(_ sender: Any?)
     @objc func clearHistory(_ sender: Any?)
+    @objc func exportHistory(_ sender: Any?)
+    @objc func importHistory(_ sender: Any?)
     @objc func selectPosition(_ sender: NSMenuItem)
     @objc func quit(_ sender: Any?)
 }

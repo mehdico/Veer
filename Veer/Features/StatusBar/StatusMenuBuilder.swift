@@ -44,13 +44,15 @@ enum StatusMenuBuilder {
         // invisible clip.
         menu.addItem(deleteItem)
 
-        menu.addItem(makeItem(
-            symbol: "trash.slash",
-            title: VeerLocalized("menu.clearHistory"),
-            action: #selector(StatusMenuActions.clearHistory(_:)),
-            identifier: AccessibilityIdentifiers.clearHistoryButton,
-            target: target
-        ))
+        let historyItem = makeItem(
+            symbol: "clock",
+            title: VeerLocalized("menu.history"),
+            action: nil,
+            identifier: AccessibilityIdentifiers.historyButton,
+            target: nil
+        )
+        historyItem.submenu = makeHistorySubmenu(target: target)
+        menu.addItem(historyItem)
 
         menu.addItem(.separator())
 
@@ -127,6 +129,32 @@ enum StatusMenuBuilder {
             item.tag = position.rawValue
             submenu.addItem(item)
         }
+        return submenu
+    }
+
+    static func makeHistorySubmenu(target: StatusMenuActions) -> NSMenu {
+        let submenu = NSMenu(title: "History")
+        submenu.addItem(makeItem(
+            symbol: "trash.slash",
+            title: VeerLocalized("menu.clearHistory"),
+            action: #selector(StatusMenuActions.clearHistory(_:)),
+            identifier: AccessibilityIdentifiers.clearHistoryButton,
+            target: target
+        ))
+        submenu.addItem(makeItem(
+            symbol: "square.and.arrow.up",
+            title: VeerLocalized("menu.exportHistory"),
+            action: #selector(StatusMenuActions.exportHistory(_:)),
+            identifier: AccessibilityIdentifiers.exportHistoryButton,
+            target: target
+        ))
+        submenu.addItem(makeItem(
+            symbol: "square.and.arrow.down",
+            title: VeerLocalized("menu.importHistory"),
+            action: #selector(StatusMenuActions.importHistory(_:)),
+            identifier: AccessibilityIdentifiers.importHistoryButton,
+            target: target
+        ))
         return submenu
     }
 
