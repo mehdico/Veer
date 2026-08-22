@@ -349,6 +349,10 @@ final class HistoryListViewModel {
         if snapshot.kind == .richText, let plain = cachedFullPlainText(for: snapshot) {
             actions.append(.copyPlainText(plain))
         }
+        let qrText = snapshot.preview ?? ""
+        if !qrText.isEmpty {
+            actions.append(.copyQR(text: qrText))
+        }
         return actions
     }
 

@@ -1,4 +1,5 @@
 import AppKit
+import CoreImage
 import Foundation
 import Translation
 
@@ -123,6 +124,8 @@ final class LiveClipActionRunner: ClipActionRunning {
             copyText("rgb(\(red), \(green), \(blue))")
         case .copyUIColor(let red, let green, let blue, let alpha):
             copyText(Self.uiColorSnippet(red: red, green: green, blue: blue, alpha: alpha))
+        case .copyQR(let text):
+            copyQRCode(text)
         }
     }
 
@@ -266,5 +269,28 @@ final class LiveClipActionRunner: ClipActionRunning {
             format: "UIColor(red: %.3f, green: %.3f, blue: %.3f, alpha: %.3f)",
             locale: Locale(identifier: "en_US_POSIX"), red, green, blue, alpha
         )
+    }
+
+    /// Builds a QR code PNG for `text` and copies it to the pasteboard, so the
+    /// clip's content can be scanned from a phone or shared as an image.
+    private func copyQRCode(_ text: String) {
+        guard let png = Self.qrPNG(from: text) else { return }
+        pasteboardWriter.write(typed: [NSPasteboard.PasteboardType.png.rawValue: png])
+    }
+
+    /// Renders `text` to a QR code and returns a scaled, opaque PNG. Returns nil
+    /// when CoreImage can't build the generator (e.g. empty input).
+    static func qrPNG(from text: String) -> Data? {
+        guard !text.isEmpty,
+              let data = text.data(using: .utf8),
+              let filter = CIFilter(name: "CIQRCodeGenerator")
+        else { return nil }
+        filter.setValue(data, forKey: "inputMessage")
+        filter.setValue("M", forKey: "inputCorrectionLevel")
+        guard let ciImage = filter.outputImage else { return nil }
+        let transform = CGAffineTransform(scaleX: 10, y: 10)
+        let scaled = ciImage.transformed(by: transform)
+        let rep = NSBitmapImageRep(ciImage: scaled)
+        return rep.representation(using: .png, properties: [:])
     }
 }
