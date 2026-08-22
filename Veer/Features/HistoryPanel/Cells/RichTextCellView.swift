@@ -14,7 +14,7 @@ struct RichTextCellView: View {
     private static let cache = NSCache<NSString, NSAttributedString>()
 
     var body: some View {
-        CellChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.veerRichTextCellView) {
+        CellChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.veerRichTextCellView, pinned: snapshot.pinned) {
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: "doc.richtext")
                     .foregroundStyle(.secondary)
@@ -45,6 +45,12 @@ struct RichTextCellView: View {
         HStack(spacing: 6) {
             if let bundle = snapshot.sourceBundleId {
                 Text(bundle)
+            }
+            if snapshot.pinned {
+                Image(systemName: "pin.fill")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(Color.accentColor)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.pinnedBadge)
             }
             Text(snapshot.relativeTimeLabel)
         }

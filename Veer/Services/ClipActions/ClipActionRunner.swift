@@ -126,6 +126,10 @@ final class LiveClipActionRunner: ClipActionRunning {
             copyText(Self.uiColorSnippet(red: red, green: green, blue: blue, alpha: alpha))
         case .copyQR(let text):
             copyQRCode(text)
+        case .pin, .unpin:
+            // Pinning is handled by the view model (re-sorts history) and never
+            // reaches the action runner.
+            break
         }
     }
 

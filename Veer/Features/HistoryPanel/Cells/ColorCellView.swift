@@ -16,7 +16,7 @@ struct ColorCellView: View {
     @State private var loaded = false
 
     var body: some View {
-        CellChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.veerColorCellView) {
+        CellChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.veerColorCellView, pinned: snapshot.pinned) {
             HStack(spacing: 10) {
                 if previewsEnabled {
                     swatch
@@ -49,6 +49,12 @@ struct ColorCellView: View {
         HStack(spacing: 6) {
             if let bundle = snapshot.sourceBundleId {
                 Text(bundle)
+            }
+            if snapshot.pinned {
+                Image(systemName: "pin.fill")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(Color.accentColor)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.pinnedBadge)
             }
             Text(snapshot.relativeTimeLabel)
         }

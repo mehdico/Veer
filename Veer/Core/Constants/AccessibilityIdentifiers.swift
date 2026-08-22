@@ -58,4 +58,5 @@ enum AccessibilityIdentifiers {
         "clipAction_\(actionID)"
     }
     static let debugHistoryCount = "debugHistoryCount"
+    static let pinnedBadge = "pinnedBadge"
 }

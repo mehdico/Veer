@@ -8,6 +8,7 @@ enum RepositoryChange: Sendable, Equatable {
     case deleted(UUID)
     case cleared
     case capped
+    case pinned(UUID)
 }
 
 @MainActor
@@ -28,6 +29,7 @@ protocol ClipRepository: AnyObject {
     func fetchBlobs(id: UUID) throws -> [PayloadBlob]
     func fetchThumbnail(id: UUID) throws -> Data?
     func moveToFront(id: UUID) throws
+    func setPinned(id: UUID, pinned: Bool) throws
     func delete(id: UUID) throws
     func clear() throws
     func setMaxItems(_ n: Int) throws

@@ -8,6 +8,8 @@ final class ClipItem {
     var sourceBundleId: String?
     var typeRawValues: [String]
     var preview: String?
+    /// Keeps the clip pinned to the top of history regardless of recency.
+    var pinned: Bool = false
     @Attribute(.externalStorage) var thumbnailPNG: Data?
     var payloadDigest: Data
     @Relationship(deleteRule: .cascade, inverse: \PayloadBlob.item)

@@ -14,7 +14,7 @@ struct PdfCellView: View {
     private static let cache = NSCache<NSString, NSImage>()
 
     var body: some View {
-        CellChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.veerPdfCellView) {
+        CellChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.veerPdfCellView, pinned: snapshot.pinned) {
             HStack(spacing: 10) {
                 if let thumbnail {
                     Image(nsImage: thumbnail)
@@ -50,6 +50,12 @@ struct PdfCellView: View {
         HStack(spacing: 6) {
             if let bundle = snapshot.sourceBundleId {
                 Text(bundle)
+            }
+            if snapshot.pinned {
+                Image(systemName: "pin.fill")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(Color.accentColor)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.pinnedBadge)
             }
             Text(snapshot.relativeTimeLabel)
         }

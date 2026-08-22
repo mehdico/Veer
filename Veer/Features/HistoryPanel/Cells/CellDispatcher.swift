@@ -7,41 +7,44 @@ func clipCellView(
     isSelected: Bool,
     viewModel: HistoryListViewModel
 ) -> some View {
-    if viewModel.previewsEnabled, let hexText = snapshot.colorHexText {
-        ColorCellView(snapshot: snapshot, isSelected: isSelected, blobProvider: { nil }, hexColorFallback: hexText)
-    } else {
-        switch snapshot.kind {
-        case .image:
-            ImageCellView(snapshot: snapshot, isSelected: isSelected, viewModel: viewModel)
-        case .pdf:
-            PdfCellView(snapshot: snapshot, isSelected: isSelected, previewsEnabled: viewModel.previewsEnabled, blobProvider: {
-                viewModel.blob(for: snapshot.id, type: NSPasteboard.PasteboardType.pdf.rawValue)
-            })
-        case .color:
-            ColorCellView(snapshot: snapshot, isSelected: isSelected, previewsEnabled: viewModel.previewsEnabled, blobProvider: {
-                viewModel.blob(for: snapshot.id, type: NSPasteboard.PasteboardType.color.rawValue)
-            })
-        case .file:
-            FileCellView(snapshot: snapshot, isSelected: isSelected, previewsEnabled: viewModel.previewsEnabled, blobProvider: {
-                viewModel.blob(for: snapshot.id, type: NSPasteboard.PasteboardType.fileURL.rawValue)
-            })
-        case .richText:
-            RichTextCellView(
-                snapshot: snapshot,
-                isSelected: isSelected,
-                blobProvider: {
-                    viewModel.blob(for: snapshot.id, type: NSPasteboard.PasteboardType.rtf.rawValue)
-                },
-                highlightRanges: viewModel.highlights(for: snapshot)
-            )
-        case .text:
-            TextCellView(
-                snapshot: snapshot,
-                isSelected: isSelected,
-                highlightRanges: viewModel.highlights(for: snapshot)
-            )
+    let content: some View = Group {
+        if viewModel.previewsEnabled, let hexText = snapshot.colorHexText {
+            ColorCellView(snapshot: snapshot, isSelected: isSelected, blobProvider: { nil }, hexColorFallback: hexText)
+        } else {
+            switch snapshot.kind {
+            case .image:
+                ImageCellView(snapshot: snapshot, isSelected: isSelected, viewModel: viewModel)
+            case .pdf:
+                PdfCellView(snapshot: snapshot, isSelected: isSelected, previewsEnabled: viewModel.previewsEnabled, blobProvider: {
+                    viewModel.blob(for: snapshot.id, type: NSPasteboard.PasteboardType.pdf.rawValue)
+                })
+            case .color:
+                ColorCellView(snapshot: snapshot, isSelected: isSelected, previewsEnabled: viewModel.previewsEnabled, blobProvider: {
+                    viewModel.blob(for: snapshot.id, type: NSPasteboard.PasteboardType.color.rawValue)
+                })
+            case .file:
+                FileCellView(snapshot: snapshot, isSelected: isSelected, previewsEnabled: viewModel.previewsEnabled, blobProvider: {
+                    viewModel.blob(for: snapshot.id, type: NSPasteboard.PasteboardType.fileURL.rawValue)
+                })
+            case .richText:
+                RichTextCellView(
+                    snapshot: snapshot,
+                    isSelected: isSelected,
+                    blobProvider: {
+                        viewModel.blob(for: snapshot.id, type: NSPasteboard.PasteboardType.rtf.rawValue)
+                    },
+                    highlightRanges: viewModel.highlights(for: snapshot)
+                )
+            case .text:
+                TextCellView(
+                    snapshot: snapshot,
+                    isSelected: isSelected,
+                    highlightRanges: viewModel.highlights(for: snapshot)
+                )
+            }
         }
     }
+    content
 }
 
 /// Right-click menu for a clip: a Smart Actions submenu listing the detected

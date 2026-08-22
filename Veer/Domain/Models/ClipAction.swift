@@ -58,6 +58,10 @@ enum ClipAction: Identifiable, Hashable, Sendable {
     case copyUIColor(red: Double, green: Double, blue: Double, alpha: Double)
     case copyQR(text: String)
 
+    // Organization
+    case pin(id: UUID)
+    case unpin(id: UUID)
+
     var id: String {
         switch self {
         case .openURL: "openURL"
@@ -87,6 +91,8 @@ enum ClipAction: Identifiable, Hashable, Sendable {
         case .copyCSSRGB: "copyCSSRGB"
         case .copyUIColor: "copyUIColor"
         case .copyQR: "copyQR"
+        case .pin: "pin"
+        case .unpin: "unpin"
         }
     }
 
@@ -149,6 +155,10 @@ enum ClipAction: Identifiable, Hashable, Sendable {
             return "Copy as UIColor"
         case .copyQR:
             return "Copy QR Code"
+        case .pin:
+            return "Pin to top"
+        case .unpin:
+            return "Unpin"
         }
     }
 
@@ -180,7 +190,10 @@ enum ClipAction: Identifiable, Hashable, Sendable {
         case .copyCSSRGB: "paintbrush.pointed"
         case .copyUIColor: "paintbrush"
         case .copyQR: "qrcode"
+        case .pin: "pin"
+        case .unpin: "pin.slash"
         }
+    }
     }
 
     /// How the panel behaves after running this action. Launching actions hand
@@ -197,7 +210,7 @@ enum ClipAction: Identifiable, Hashable, Sendable {
              .copyGitCloneURL, .translate, .copyAsPNG, .copyPlainText,
              .copyHexColor, .copyCSSRGB, .copyUIColor, .copyQR:
             .restorePreviousApp
-        case .saveToDownloads:
+        case .saveToDownloads, .pin, .unpin:
             .justHide
         }
     }

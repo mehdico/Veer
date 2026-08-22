@@ -8,6 +8,7 @@ private struct CardChrome<Content: View>: View {
     let identifier: String
     let sourceBundleId: String?
     let timeLabel: String
+    let pinned: Bool
     @State private var isHovered = false
     @ViewBuilder let content: () -> Content
 
@@ -19,17 +20,26 @@ private struct CardChrome<Content: View>: View {
             }
             content()
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            Text(timeLabel)
-                .font(.system(size: 9))
-                .foregroundStyle(.tertiary)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .padding(.top, 4)
+            HStack(spacing: 0) {
+                Spacer()
+                if pinned {
+                    Image(systemName: "pin.fill")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(Color.accentColor)
+                        .padding(.trailing, 3)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.pinnedBadge)
+                }
+                Text(timeLabel)
+                    .font(.system(size: 9))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.top, 4)
         }
         .padding(10)
         .background(.ultraThinMaterial)
         .background(
             RoundedRectangle(cornerRadius: Constants.UI.cardCornerRadius)
-                .fill(Color.primary.opacity(isHovered && !isSelected ? 0.05 : 0))
+                .fill(pinned ? Color.accentColor.opacity(0.12) : Color.primary.opacity(isHovered && !isSelected ? 0.05 : 0))
         )
         .overlay(
             RoundedRectangle(cornerRadius: Constants.UI.cardCornerRadius)
@@ -69,7 +79,6 @@ private struct CardChrome<Content: View>: View {
 struct TextCardView: View {
     let snapshot: ClipItemSnapshot
     let isSelected: Bool
-    /// Search highlight ranges inside the preview.
     var highlightRanges: [Range<String.Index>] = []
 
     var body: some View {
@@ -77,7 +86,8 @@ struct TextCardView: View {
             isSelected: isSelected,
             identifier: AccessibilityIdentifiers.veerTextCellView,
             sourceBundleId: snapshot.sourceBundleId,
-            timeLabel: snapshot.relativeTimeLabel
+            timeLabel: snapshot.relativeTimeLabel,
+            pinned: snapshot.pinned
         ) {
             previewText
                 .font(.system(size: 14))
@@ -96,8 +106,6 @@ struct RichTextCardView: View {
     let snapshot: ClipItemSnapshot
     let isSelected: Bool
     let blobProvider: () -> Data?
-    /// Search highlight ranges for the plain-text fallback only (attributed
-    /// RTF has its own character layout, so it is left unhighlighted).
     var highlightRanges: [Range<String.Index>] = []
 
     @State private var attributed: AttributedString?
@@ -109,7 +117,8 @@ struct RichTextCardView: View {
             isSelected: isSelected,
             identifier: AccessibilityIdentifiers.veerRichTextCellView,
             sourceBundleId: snapshot.sourceBundleId,
-            timeLabel: snapshot.relativeTimeLabel
+            timeLabel: snapshot.relativeTimeLabel,
+            pinned: snapshot.pinned
         ) {
             if let attributed {
                 Text(attributed)
@@ -158,7 +167,7 @@ struct ImageCardView: View {
     @State private var hasThumbnail = false
 
     var body: some View {
-        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.veerTiffCellView, sourceBundleId: snapshot.sourceBundleId, timeLabel: snapshot.relativeTimeLabel) {
+        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.veerTiffCellView, sourceBundleId: snapshot.sourceBundleId, timeLabel: snapshot.relativeTimeLabel, pinned: snapshot.pinned) {
             if viewModel.previewsEnabled {
                 ClipThumbnailImage(clipID: snapshot.id) {
                     viewModel.thumbnailPNG(for: snapshot.id)
@@ -197,7 +206,7 @@ struct ColorCardView: View {
     @State private var loaded = false
 
     var body: some View {
-        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.veerColorCellView, sourceBundleId: snapshot.sourceBundleId, timeLabel: snapshot.relativeTimeLabel) {
+        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.veerColorCellView, sourceBundleId: snapshot.sourceBundleId, timeLabel: snapshot.relativeTimeLabel, pinned: snapshot.pinned) {
             if previewsEnabled {
                 ZStack(alignment: .bottomLeading) {
                     swatch
@@ -303,7 +312,7 @@ struct PdfCardView: View {
     private static let cache = NSCache<NSString, NSImage>()
 
     var body: some View {
-        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.veerPdfCellView, sourceBundleId: snapshot.sourceBundleId, timeLabel: snapshot.relativeTimeLabel) {
+        CardChrome(isSelected: isSelected, identifier: AccessibilityIdentifiers.veerPdfCellView, sourceBundleId: snapshot.sourceBundleId, timeLabel: snapshot.relativeTimeLabel, pinned: snapshot.pinned) {
             VStack(spacing: 6) {
                 if let thumbnail {
                     Image(nsImage: thumbnail)
@@ -370,7 +379,7 @@ struct FileCardView: View {
     private static let iconCache = NSCache<NSString, NSImage>()
 
     var body: some View {
-        CardChrome(isSelected: isSelected, identifier: identifier, sourceBundleId: snapshot.sourceBundleId, timeLabel: snapshot.relativeTimeLabel) {
+        CardChrome(isSelected: isSelected, identifier: identifier, sourceBundleId: snapshot.sourceBundleId, timeLabel: snapshot.relativeTimeLabel, pinned: snapshot.pinned) {
             VStack(spacing: 6) {
                 ZStack(alignment: .bottomTrailing) {
                     imageView

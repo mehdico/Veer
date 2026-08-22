@@ -20,7 +20,7 @@ struct FileCellView: View {
     private static let iconCache = NSCache<NSString, NSImage>()
 
     var body: some View {
-        CellChrome(isSelected: isSelected, identifier: identifier) {
+        CellChrome(isSelected: isSelected, identifier: identifier, pinned: snapshot.pinned) {
             HStack(spacing: 10) {
                 imageView
                     .frame(width: 36, height: 36)
@@ -36,6 +36,12 @@ struct FileCellView: View {
                              : (url?.deletingLastPathComponent().path ?? ""))
                             .lineLimit(1)
                             .truncationMode(.head)
+                        if snapshot.pinned {
+                            Image(systemName: "pin.fill")
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundStyle(Color.accentColor)
+                                .accessibilityIdentifier(AccessibilityIdentifiers.pinnedBadge)
+                        }
                         Text(snapshot.relativeTimeLabel)
                     }
                     .font(.system(size: 10))
