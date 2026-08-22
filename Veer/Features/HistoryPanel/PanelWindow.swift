@@ -31,7 +31,7 @@ final class PanelWindow: NSPanel {
         vev.state = .active
         vev.wantsLayer = true
         vev.layer?.cornerRadius = 0
-        vev.setAccessibilityIdentifier(AccessibilityIdentifiers.yippyWindow)
+        vev.setAccessibilityIdentifier(AccessibilityIdentifiers.veerWindow)
         
         contentView = vev
         self.visualEffectView = vev
