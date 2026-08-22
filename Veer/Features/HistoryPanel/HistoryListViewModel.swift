@@ -283,9 +283,10 @@ final class HistoryListViewModel {
     private func confirmDelete(_ snapshot: ClipItemSnapshot) -> Bool {
         guard let alerter else { return true }
         let what = snapshot.preview.map { "“\($0)”" } ?? "this clip"
+        let message = String(format: VeerLocalized("alert.deleteClip.message"), what)
         return alerter.presentConfirmation(
-            message: "Delete clip?",
-            informativeText: "This removes \(what) from your history. This can't be undone.",
+            message: VeerLocalized("alert.deleteClip.title"),
+            informativeText: message,
             confirmTitle: "Delete",
             cancelTitle: "Cancel"
         )

@@ -35,7 +35,7 @@ final class StatusBarController: NSObject, StatusMenuActions, NSMenuDelegate {
         if let toggle = menu.items.first(where: {
             $0.accessibilityIdentifier() == AccessibilityIdentifiers.toggleWindowButton
         }) {
-            toggle.title = panelShown ? "Hide Veer" : "Show Veer"
+            toggle.title = panelShown ? VeerLocalized("menu.hideVeer") : VeerLocalized("menu.showVeer")
         }
         if let delete = menu.items.first(where: {
             $0.accessibilityIdentifier() == AccessibilityIdentifiers.deleteSelectedButton
@@ -135,8 +135,8 @@ final class StatusBarController: NSObject, StatusMenuActions, NSMenuDelegate {
 
     func clearHistory(_ sender: Any?) {
         let confirmed = env.alerter.presentConfirmation(
-            message: "Clear history?",
-            informativeText: "This removes every clip from your history. This can't be undone.",
+            message: VeerLocalized("alert.clearHistory.title"),
+            informativeText: VeerLocalized("alert.clearHistory.message"),
             confirmTitle: "Clear History",
             cancelTitle: "Cancel"
         )

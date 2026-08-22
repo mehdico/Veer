@@ -8,7 +8,7 @@ enum StatusMenuBuilder {
 
         let toggleItem = makeItem(
             symbol: "rectangle.portrait.on.rectangle.portrait",
-            title: "Show Veer",
+            title: VeerLocalized("menu.showVeer"),
             action: #selector(StatusMenuActions.togglePanel(_:)),
             keyEquivalent: "V",
             identifier: AccessibilityIdentifiers.toggleWindowButton,
@@ -46,7 +46,7 @@ enum StatusMenuBuilder {
 
         menu.addItem(makeItem(
             symbol: "trash.slash",
-            title: "Clear history…",
+            title: VeerLocalized("menu.clearHistory"),
             action: #selector(StatusMenuActions.clearHistory(_:)),
             identifier: AccessibilityIdentifiers.clearHistoryButton,
             target: target
@@ -64,7 +64,7 @@ enum StatusMenuBuilder {
 
         menu.addItem(makeItem(
             symbol: "gearshape",
-            title: "Settings…",
+            title: VeerLocalized("menu.settings"),
             action: #selector(StatusMenuActions.showPreferences(_:)),
             keyEquivalent: ",",
             identifier: AccessibilityIdentifiers.preferencesButton,
@@ -75,7 +75,7 @@ enum StatusMenuBuilder {
 
         menu.addItem(makeItem(
             symbol: "questionmark.circle",
-            title: "Help",
+            title: VeerLocalized("menu.help"),
             action: #selector(StatusMenuActions.showHelp(_:)),
             identifier: AccessibilityIdentifiers.helpButton,
             target: target
@@ -83,7 +83,7 @@ enum StatusMenuBuilder {
 
         menu.addItem(makeItem(
             symbol: "info.circle",
-            title: "About Veer",
+            title: VeerLocalized("menu.about"),
             action: #selector(StatusMenuActions.showAbout(_:)),
             identifier: AccessibilityIdentifiers.aboutButton,
             target: target
@@ -93,7 +93,7 @@ enum StatusMenuBuilder {
 
         menu.addItem(makeItem(
             symbol: "power.circle",
-            title: "Quit Veer",
+            title: VeerLocalized("menu.quit"),
             action: #selector(StatusMenuActions.quit(_:)),
             keyEquivalent: "q",
             identifier: AccessibilityIdentifiers.quitButton,
