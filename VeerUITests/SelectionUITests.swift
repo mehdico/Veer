@@ -7,7 +7,7 @@ final class SelectionUITests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
-        app.launchArguments = ["--uitesting", "--seed=selection"]
+        app.launchArguments = ["--uitesting", "--seed=mixed"]
         app.launch()
     }
 
