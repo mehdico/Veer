@@ -123,6 +123,10 @@ final class LiveClipActionRunner: ClipActionRunning {
             copyText("rgb(\(red), \(green), \(blue))")
         case .copyUIColor(let red, let green, let blue, let alpha):
             copyText(Self.uiColorSnippet(red: red, green: green, blue: blue, alpha: alpha))
+        case .pin, .unpin:
+            // Pinning is handled by the view model (re-sorts history) and never
+            // reaches the action runner.
+            break
         }
     }
 

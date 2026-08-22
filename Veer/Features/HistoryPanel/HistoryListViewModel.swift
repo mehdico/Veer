@@ -200,7 +200,18 @@ final class HistoryListViewModel {
         items = fetched
         itemsByID = Dictionary(uniqueKeysWithValues: items.map { ($0.id, $0) })
         actionsCache.removeAll()
+        reorder()
         runSearch(preservingSelection: true)
+    }
+
+    /// Reorders `items` so pinned clips sit above unpinned ones, each group
+    /// most-recent-first. Keeps the in-memory list consistent with what the
+    /// panel renders without re-fetching.
+    private func reorder() {
+        items.sort { lhs, rhs in
+            if lhs.pinned != rhs.pinned { return lhs.pinned }
+            return lhs.createdAt > rhs.createdAt
+        }
     }
 
     private func applyRepositoryChange(_ change: RepositoryChange) {
@@ -212,6 +223,7 @@ final class HistoryListViewModel {
             items.insert(snapshot, at: 0)
             itemsByID[id] = snapshot
             trimToLimit()
+            reorder()
             runSearch(preservingSelection: true)
         case .movedToFront(let id):
             guard let item = try? repository.fetchOne(id: id) else { return }
@@ -220,6 +232,7 @@ final class HistoryListViewModel {
             guard let index = items.firstIndex(where: { $0.id == id }) else { return }
             items.remove(at: index)
             items.insert(snapshot, at: 0)
+            reorder()
             runSearch(preservingSelection: true)
         case .deleted(let id):
             guard itemsByID[id] != nil else { return }
@@ -232,6 +245,15 @@ final class HistoryListViewModel {
                 // the deleted one and must close.
                 closeActionStrip()
             }
+        case .pinned(let id):
+            guard let item = try? repository.fetchOne(id: id) else { return }
+            let snapshot = ClipItemSnapshot(item)
+            itemsByID[id] = snapshot
+            if let index = items.firstIndex(where: { $0.id == id }) {
+                items[index] = snapshot
+            }
+            reorder()
+            runSearch(preservingSelection: true)
         case .cleared:
             items = []
             itemsByID = [:]
@@ -274,6 +296,34 @@ final class HistoryListViewModel {
         delete(snapshot)
     }
 
+    /// Toggles the pin state of a clip and re-sorts it to (or from) the top.
+    func togglePin(id: UUID) {
+        guard let snapshot = itemsByID[id] else { return }
+        let next = !snapshot.pinned
+        try? repository.setPinned(id: id, pinned: next)
+        let updated = ClipItemSnapshot(
+            id: snapshot.id,
+            createdAt: snapshot.createdAt,
+            sourceBundleId: snapshot.sourceBundleId,
+            preview: snapshot.preview,
+            typeRawValues: snapshot.typeRawValues,
+            pinned: next
+        )
+        itemsByID[id] = updated
+        if let index = items.firstIndex(where: { $0.id == id }) {
+            items[index] = updated
+        }
+        actionsCache[id] = nil
+        reorder()
+        runSearch(preservingSelection: true)
+    }
+
+    /// Toggles the pin state of the currently selected clip (⌘P).
+    func togglePinCurrent() {
+        guard let snapshot = currentSnapshot() else { return }
+        togglePin(id: snapshot.id)
+    }
+
     /// Deletes a specific clip after asking for confirmation.
     func delete(_ snapshot: ClipItemSnapshot) {
         guard confirmDelete(snapshot) else { return }
@@ -306,8 +356,10 @@ final class HistoryListViewModel {
             return cached.actions
         }
         let detected = detectActions(for: snapshot)
-        actionsCache[snapshot.id] = (snapshot, webSearch, detected)
-        return detected
+        var withPin = detected
+        withPin.append(snapshot.pinned ? .unpin(id: snapshot.id) : .pin(id: snapshot.id))
+        actionsCache[snapshot.id] = (snapshot, webSearch, withPin)
+        return withPin
     }
 
     private func detectActions(for snapshot: ClipItemSnapshot) -> [ClipAction] {
@@ -601,6 +653,13 @@ final class HistoryListViewModel {
     }
 
     func run(_ action: ClipAction) {
+        switch action {
+        case .pin(let id), .unpin(let id):
+            togglePin(id: id)
+            return
+        default:
+            break
+        }
         actionRunner.run(action)
         preview?.hide()
         panel.hide()

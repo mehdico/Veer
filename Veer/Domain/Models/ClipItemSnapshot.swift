@@ -9,13 +9,16 @@ struct ClipItemSnapshot: Identifiable, Hashable, Sendable {
     /// re-folds the corpus per keystroke.
     let foldedPreview: String?
     let typeRawValues: [String]
+    /// Whether the clip is pinned to the top of history.
+    let pinned: Bool
 
     init(
         id: UUID,
         createdAt: Date,
         sourceBundleId: String?,
         preview: String?,
-        typeRawValues: [String]
+        typeRawValues: [String],
+        pinned: Bool = false
     ) {
         self.id = id
         self.createdAt = createdAt
@@ -23,6 +26,7 @@ struct ClipItemSnapshot: Identifiable, Hashable, Sendable {
         self.preview = preview
         self.foldedPreview = preview?.lowercased()
         self.typeRawValues = typeRawValues
+        self.pinned = pinned
     }
 }
 
@@ -40,7 +44,8 @@ extension ClipItemSnapshot {
             createdAt: item.createdAt,
             sourceBundleId: item.sourceBundleId,
             preview: item.preview,
-            typeRawValues: item.typeRawValues
+            typeRawValues: item.typeRawValues,
+            pinned: item.pinned
         )
     }
 }

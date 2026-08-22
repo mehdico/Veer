@@ -57,6 +57,10 @@ enum ClipAction: Identifiable, Hashable, Sendable {
     case copyCSSRGB(red: Int, green: Int, blue: Int)
     case copyUIColor(red: Double, green: Double, blue: Double, alpha: Double)
 
+    // Organization
+    case pin(id: UUID)
+    case unpin(id: UUID)
+
     var id: String {
         switch self {
         case .openURL: "openURL"
@@ -85,6 +89,8 @@ enum ClipAction: Identifiable, Hashable, Sendable {
         case .copyHexColor: "copyHexColor"
         case .copyCSSRGB: "copyCSSRGB"
         case .copyUIColor: "copyUIColor"
+        case .pin: "pin"
+        case .unpin: "unpin"
         }
     }
 
@@ -145,6 +151,10 @@ enum ClipAction: Identifiable, Hashable, Sendable {
             return "Copy as CSS rgb()"
         case .copyUIColor:
             return "Copy as UIColor"
+        case .pin:
+            return "Pin to top"
+        case .unpin:
+            return "Unpin"
         }
     }
 
@@ -175,6 +185,8 @@ enum ClipAction: Identifiable, Hashable, Sendable {
         case .copyHexColor: "number"
         case .copyCSSRGB: "paintbrush.pointed"
         case .copyUIColor: "paintbrush"
+        case .pin: "pin"
+        case .unpin: "pin.slash"
         }
     }
 
@@ -192,7 +204,7 @@ enum ClipAction: Identifiable, Hashable, Sendable {
              .copyGitCloneURL, .translate, .copyAsPNG, .copyPlainText,
              .copyHexColor, .copyCSSRGB, .copyUIColor:
             .restorePreviousApp
-        case .saveToDownloads:
+        case .saveToDownloads, .pin, .unpin:
             .justHide
         }
     }

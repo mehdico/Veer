@@ -208,6 +208,12 @@ enum PanelKeyHandler {
             return .handled
         }
 
+        // ⌘P pins/unpins the selected clip to the top of history.
+        if mods.contains(.command) && chars.lowercased() == "p" {
+            viewModel.togglePinCurrent()
+            return .handled
+        }
+
         let suppressedMods: EventModifiers = [.command, .control, .option]
         guard mods.intersection(suppressedMods).isEmpty else { return .ignored }
 

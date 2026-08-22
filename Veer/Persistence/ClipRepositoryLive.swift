@@ -137,6 +137,14 @@ final class ClipRepositoryLive: ClipRepository {
         notify(.movedToFront(id))
     }
 
+    func setPinned(id: UUID, pinned: Bool) throws {
+        let descriptor = FetchDescriptor<ClipItem>(predicate: #Predicate { $0.id == id })
+        guard let item = try context.fetch(descriptor).first else { return }
+        item.pinned = pinned
+        try context.save()
+        notify(.pinned(id))
+    }
+
     func delete(id: UUID) throws {
         let descriptor = FetchDescriptor<ClipItem>(predicate: #Predicate { $0.id == id })
         if let item = try context.fetch(descriptor).first {
