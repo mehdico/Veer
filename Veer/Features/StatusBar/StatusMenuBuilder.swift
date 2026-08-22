@@ -55,6 +55,23 @@ enum StatusMenuBuilder {
         menu.addItem(.separator())
 
         menu.addItem(makeItem(
+            symbol: "square.and.arrow.up",
+            title: "Export History…",
+            action: #selector(StatusMenuActions.exportHistory(_:)),
+            identifier: AccessibilityIdentifiers.exportHistoryButton,
+            target: target
+        ))
+        menu.addItem(makeItem(
+            symbol: "square.and.arrow.down",
+            title: "Import History…",
+            action: #selector(StatusMenuActions.importHistory(_:)),
+            identifier: AccessibilityIdentifiers.importHistoryButton,
+            target: target
+        ))
+
+        menu.addItem(.separator())
+
+        menu.addItem(makeItem(
             symbol: "power",
             title: "Open at login",
             action: #selector(StatusMenuActions.toggleLaunchAtLogin(_:)),
