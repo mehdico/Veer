@@ -56,6 +56,7 @@ enum ClipAction: Identifiable, Hashable, Sendable {
     case copyHexColor(String)
     case copyCSSRGB(red: Int, green: Int, blue: Int)
     case copyUIColor(red: Double, green: Double, blue: Double, alpha: Double)
+    case copyQR(text: String)
 
     var id: String {
         switch self {
@@ -85,6 +86,7 @@ enum ClipAction: Identifiable, Hashable, Sendable {
         case .copyHexColor: "copyHexColor"
         case .copyCSSRGB: "copyCSSRGB"
         case .copyUIColor: "copyUIColor"
+        case .copyQR: "copyQR"
         }
     }
 
@@ -145,6 +147,8 @@ enum ClipAction: Identifiable, Hashable, Sendable {
             return "Copy as CSS rgb()"
         case .copyUIColor:
             return "Copy as UIColor"
+        case .copyQR:
+            return "Copy QR Code"
         }
     }
 
@@ -175,6 +179,7 @@ enum ClipAction: Identifiable, Hashable, Sendable {
         case .copyHexColor: "number"
         case .copyCSSRGB: "paintbrush.pointed"
         case .copyUIColor: "paintbrush"
+        case .copyQR: "qrcode"
         }
     }
 
@@ -190,7 +195,7 @@ enum ClipAction: Identifiable, Hashable, Sendable {
         case .copyMarkdownLink, .copySwiftColor, .copyPath, .copyFile,
              .copyMathResult, .copyPrettyJSON, .copyMinifiedJSON, .copyEpochSeconds,
              .copyGitCloneURL, .translate, .copyAsPNG, .copyPlainText,
-             .copyHexColor, .copyCSSRGB, .copyUIColor:
+             .copyHexColor, .copyCSSRGB, .copyUIColor, .copyQR:
             .restorePreviousApp
         case .saveToDownloads:
             .justHide
