@@ -62,6 +62,14 @@ struct HistoryCardStripView: View {
     @Bindable var coordinator: PanelCoordinator
     @FocusState private var searchFocused: Bool
     @State private var firstVisibleID: UUID?
+    /// The card actually at the leading (left/top) edge of the viewport, kept
+    /// in sync with native scrolling via scroll geometry. `firstVisibleID` only
+    /// reflects programmatic scrolls (wheel/keyboard/search), so a plain
+    /// trackpad swipe would otherwise leave the ⌘N base and click-to-scroll
+    /// math anchored to a card that's long since scrolled off — badges then
+    /// stick to the wrong cards and eventually vanish, and clicking a visible
+    /// card is mistaken for an off-window selection and snapped to the edge.
+    @State private var leadingID: UUID?
     @State private var wheelScroller = WheelScroller()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -84,6 +92,7 @@ struct HistoryCardStripView: View {
             if shown {
                 searchFocused = true
                 firstVisibleID = viewModel.filteredItems.first?.id
+                leadingID = viewModel.filteredItems.first?.id
             }
         }
         .onKeyPress(phases: [.down, .repeat]) { press in
@@ -93,10 +102,15 @@ struct HistoryCardStripView: View {
 
     private func configureWheelScroller() {
         let idBinding = $firstVisibleID
+        let leadingBinding = $leadingID
         wheelScroller.step = { [weak viewModel] direction in
             guard let viewModel else { return }
             let items = viewModel.filteredItems
-            guard let currentID = idBinding.wrappedValue,
+            // Step from the card actually at the leading edge (kept in sync with
+            // native scrolling via geometry), not `firstVisibleID`, which only
+            // reflects programmatic scrolls and would otherwise jump the strip
+            // back to a stale position after a trackpad swipe.
+            guard let currentID = leadingBinding.wrappedValue,
                   let index = items.firstIndex(where: { $0.id == currentID })
             else { return }
             let next = min(max(index + direction, 0), items.count - 1)
@@ -136,6 +150,9 @@ struct HistoryCardStripView: View {
                 if firstVisibleID == nil {
                     firstVisibleID = viewModel.filteredItems.first?.id
                 }
+                if leadingID == nil {
+                    leadingID = viewModel.filteredItems.first?.id
+                }
                 wheelScroller.isVerticalLayout = isVertical
                 wheelScroller.isEnabled = coordinator.isShown && !isVertical
             }
@@ -143,7 +160,17 @@ struct HistoryCardStripView: View {
                 wheelScroller.isVerticalLayout = vertical
                 wheelScroller.isEnabled = coordinator.isShown && !vertical
             }
-            .onChange(of: firstVisibleID) { _, newID in
+            // Keep the leading-edge card in sync with native (trackpad) scrolls
+            // so the ⌘N base and click-to-scroll math track what's actually on
+            // screen. `scrollPosition` only reports programmatic scrolls.
+            .onScrollGeometryChange(for: UUID?.self) { geometry in
+                leadingVisibleID(from: geometry, isVertical: isVertical, side: side)
+            } action: { _, newID in
+                if let newID, newID != leadingID {
+                    leadingID = newID
+                }
+            }
+            .onChange(of: leadingID) { _, newID in
                 guard let newID,
                       let idx = viewModel.filteredItems.firstIndex(where: { $0.id == newID })
                 else { return }
@@ -151,7 +178,7 @@ struct HistoryCardStripView: View {
             }
             .onChange(of: viewModel.filteredIDs) { _, _ in
                 let items = viewModel.filteredItems
-                if let anchor = firstVisibleID,
+                if let anchor = leadingID,
                    let idx = items.firstIndex(where: { $0.id == anchor })
                 {
                     viewModel.quickPasteBase = idx
@@ -161,13 +188,14 @@ struct HistoryCardStripView: View {
                     // leaving scrollPosition — and wheel scrolling, which keys
                     // off this ID — pointing at a card that no longer exists.
                     firstVisibleID = items.first?.id
+                    leadingID = items.first?.id
                     viewModel.quickPasteBase = 0
                 }
             }
             .onChange(of: viewModel.selectedIndex) { _, newIndex in
                 let items = viewModel.filteredItems
                 guard newIndex >= 0, newIndex < items.count else { return }
-                let firstIdx = items.firstIndex(where: { $0.id == firstVisibleID }) ?? 0
+                let firstIdx = items.firstIndex(where: { $0.id == leadingID }) ?? 0
                 if newIndex < firstIdx {
                     firstVisibleID = items[newIndex].id
                 } else if newIndex >= firstIdx + visibleCount {
@@ -182,16 +210,40 @@ struct HistoryCardStripView: View {
                 // before the debounce lands, and resetting then anchored the
                 // strip to the previous query's first match.
                 viewModel.quickPasteBase = 0
+                let firstID = viewModel.filteredItems.first?.id
+                leadingID = firstID
                 if viewModel.searchText.isEmpty || reduceMotion {
                     // Reset scroll instantly to prevent jumping
-                    firstVisibleID = viewModel.filteredItems.first?.id
+                    firstVisibleID = firstID
                 } else {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                        firstVisibleID = viewModel.filteredItems.first?.id
+                        firstVisibleID = firstID
                     }
                 }
             }
         }
+    }
+
+    /// The id of the card sitting at the leading (left, or top when vertical)
+    /// edge of the viewport, derived from scroll geometry rather than the
+    /// `scrollPosition` binding — which on macOS only reflects programmatic
+    /// scrolls and never updates during a native trackpad swipe. Cards are
+    /// uniformly sized with a fixed `8pt` gap, so the leading index is the
+    /// viewport's leading edge projected onto the regular card stride; the
+    /// content origin is solved from the known content size so no margin
+    /// constant is hard-coded.
+    private func leadingVisibleID(from geometry: ScrollGeometry, isVertical: Bool, side: CGFloat) -> UUID? {
+        let items = viewModel.filteredItems
+        guard items.count > 1 else { return items.first?.id }
+        let contentLength = isVertical ? geometry.contentSize.height : geometry.contentSize.width
+        let visibleLeading = isVertical ? geometry.visibleRect.minY : geometry.visibleRect.minX
+        let idx = CardStripScrollMath.leadingIndex(
+            contentLength: contentLength,
+            side: side,
+            count: items.count,
+            visibleLeading: visibleLeading
+        )
+        return items[idx].id
     }
 
     @ViewBuilder
@@ -268,6 +320,7 @@ struct HistoryCardStripView: View {
                 clipContextMenu(snapshot: snapshot, viewModel: viewModel)
             }
             .id(snapshot.id)
+            .accessibilityIdentifier("cardCell_\(index)")
         }
     }
 

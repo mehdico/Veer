@@ -16,6 +16,13 @@ enum Seeder {
             insertText(repository: repository, text: "https://example.com/veer")
             insertText(repository: repository, text: "hello@example.com")
             insertText(repository: repository, text: "#FF5733")
+        case "many":
+            // Enough clips that the horizontal card strip can be scrolled well
+            // past the first nine (where ⌘N badges would otherwise run out), so
+            // UI tests can exercise the leading-card tracking fix.
+            for i in 1...40 {
+                insertText(repository: repository, text: "Clip number \(i)")
+            }
         default:
             return
         }
