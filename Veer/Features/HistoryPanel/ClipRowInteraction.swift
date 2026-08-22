@@ -16,7 +16,10 @@ struct ClipRowInteraction<Content: View>: View {
                     self.lastTap = nil
                     onDoublePaste()
                 } else {
-                    onSelect()
+                    // Ensure selection updates immediately on main thread
+                    DispatchQueue.main.async {
+                        onSelect()
+                    }
                     lastTap = (index, now)
                 }
             }
